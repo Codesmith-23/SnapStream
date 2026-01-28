@@ -1,0 +1,352 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="upload-container">
+    <div class="upload-header">
+        <h1>Upload Studio</h1>
+        <p>Create, customize, and share your content</p>
+    </div>
+
+    <form action="{{ url_for('web.upload') }}" method="POST" enctype="multipart/form-data" id="uploadForm" class="upload-form" onsubmit="return prepareSubmission()">
+        
+        <div class="upload-grid">
+
+            <div class="upload-left">
+                
+                <div class="upload-section">
+                    <h3 class="section-label">Video File</h3>
+                    
+                    <div class="drop-zone" id="videoUploadZone">
+                        <div class="drop-zone-content">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <p class="drop-text">Drag video here</p>
+                            <span class="drop-size">Max 2GB</span>
+                        </div>
+                        <input type="file" name="video_file" id="video_file" accept="video/*" required style="display: none;">
+                    </div>
+
+                    <div id="videoFileStatus" class="status-badge" style="display: none;">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <div>
+                            <div id="videoFileName" class="status-filename"></div>
+                            <div id="videoFileSize" class="status-filesize"></div>
+                        </div>
+                    </div>
+
+                    <div id="scrubberSection" class="scrubber-section" style="display: none;">
+                        <video id="previewVideo" class="preview-video" crossorigin="anonymous"></video>
+                        
+                        <div class="scrubber-controls">
+                            <input type="range" id="videoScrubber" class="scrubber-slider" min="0" max="100" value="0">
+                            <div class="time-display">
+                                <span id="currentTime">0:00</span>
+                                <span id="totalTime">0:00</span>
+                            </div>
+                        </div>
+
+                        <button type="button" id="captureFrameBtn" class="btn-capture">
+                            <i class="fa-solid fa-camera"></i> Capture Frame as Thumbnail
+                        </button>
+                    </div>
+                </div>
+
+                <div class="upload-section">
+                    <h3 class="section-label">Thumbnail</h3>
+
+                    <div id="thumbnailPreviewContainer" class="thumbnail-preview" style="display: none;">
+                        <img id="thumbnailPreviewImg" src="" alt="Thumbnail">
+                        <button type="button" class="remove-thumb" onclick="removeThumbnail()">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <div class="drop-zone drop-zone-sm" id="thumbnailUploadZone">
+                        <i class="fa-solid fa-image"></i>
+                        <p class="drop-text-sm">Upload Image</p>
+                        <p class="drop-hint-sm">or use Capture above</p>
+                        <input type="file" name="thumbnail" id="thumbnail_input" accept="image/*" style="display: none;">
+                    </div>
+                </div>
+                
+                <canvas id="frameCanvas" style="display: none;"></canvas>
+            </div>
+
+            <div class="upload-right">
+                <div class="upload-section">
+                    <h3 class="section-label">Details</h3>
+
+                    <div class="form-group">
+                        <label for="title" class="form-label">Title</label>
+                        <input type="text" id="title" name="title" required class="form-input" placeholder="Video Title">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea id="description" name="description" class="form-textarea" placeholder="Tell us about your video"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tags" class="form-label">Tags</label>
+                        <input type="text" id="tags" name="tags" class="form-input" placeholder="gaming, vlog, tutorial">
+                    </div>
+
+                    <div class="form-actions">
+                        <a href="{{ url_for('web.gallery') }}" class="btn-secondary">Cancel</a>
+                        <button type="submit" id="submitBtn" class="btn-primary">
+                            <i class="fa-solid fa-arrow-up"></i> Publish
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </form>
+</div>
+
+<style>
+    /* SCROLL FIXES APPLIED HERE */
+    
+    .upload-container { 
+        padding: 2rem; 
+        max-width: 1400px; 
+        margin: 0 auto;
+        /* Removed height: 100% and overflow: hidden */
+    }
+
+    .upload-header { margin-bottom: 2rem; }
+    .upload-header h1 { font-size: 1.8rem; color: white; margin-bottom: 0.5rem; }
+    .upload-header p { color: #aaa; font-size: 0.95rem; }
+
+    /* The Grid */
+    .upload-grid { 
+        display: grid; 
+        grid-template-columns: 1.5fr 1fr; /* Left column wider */
+        gap: 2rem; 
+        align-items: start; /* Prevents stretching */
+    }
+
+    /* Column Reset */
+    .upload-left, .upload-right { 
+        display: flex; 
+        flex-direction: column; 
+        gap: 1.5rem; 
+        /* Removed overflow-y: auto */
+    }
+
+    .upload-section { 
+        background: #1a1a1a; 
+        border: 1px solid #333; 
+        border-radius: 12px; 
+        padding: 1.5rem; 
+    }
+
+    /* Responsive: Stack on smaller screens */
+    @media (max-width: 900px) {
+        .upload-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ---- REUSED COMPONENTS ---- */
+    .section-label { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; color: #888; margin-bottom: 1rem; letter-spacing: 0.5px; }
+    
+    .drop-zone { border: 2px dashed #333; border-radius: 10px; padding: 3rem 2rem; text-align: center; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #151515; }
+    .drop-zone:hover { border-color: #3b82f6; background: rgba(59, 130, 246, 0.05); }
+    .drop-zone i { font-size: 2.5rem; color: #555; margin-bottom: 1rem; transition: 0.2s; }
+    .drop-zone:hover i { color: #3b82f6; }
+    .drop-text { font-weight: 600; color: white; margin-bottom: 0.25rem; }
+    .drop-size { font-size: 0.75rem; color: #666; }
+    
+    .drop-zone-sm { padding: 1.5rem; min-height: 120px; }
+    .drop-zone-sm i { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    
+    .status-badge { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 8px; color: #10b981; margin-top: 1rem; }
+    .status-filename { font-weight: 600; font-size: 0.9rem; word-break: break-all; }
+    .status-filesize { font-size: 0.8rem; opacity: 0.8; }
+    
+    .preview-video { width: 100%; border-radius: 8px; background: black; margin-bottom: 1rem; border: 1px solid #333; max-height: 400px; }
+    
+    .scrubber-controls { display: flex; flex-direction: column; gap: 5px; margin-bottom: 1rem; }
+    .scrubber-slider { width: 100%; cursor: pointer; accent-color: #3b82f6; height: 4px; }
+    .time-display { display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; }
+    
+    .btn-capture { width: 100%; padding: 10px; background: #252525; color: white; border: 1px solid #444; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 500; font-size: 0.9rem; transition: 0.2s; }
+    .btn-capture:hover { background: #333; border-color: #666; }
+    
+    .thumbnail-preview { position: relative; width: 100%; aspect-ratio: 16/9; background: black; border-radius: 8px; overflow: hidden; margin-bottom: 1rem; border: 1px solid #333; }
+    .thumbnail-preview img { width: 100%; height: 100%; object-fit: cover; }
+    .remove-thumb { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%; background: rgba(0,0,0,0.7); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+    .remove-thumb:hover { background: #ef4444; }
+    
+    .form-group { margin-bottom: 1.5rem; }
+    .form-label { display: block; margin-bottom: 0.5rem; font-size: 0.85rem; font-weight: 600; color: #ccc; }
+    .form-input, .form-textarea { width: 100%; padding: 12px; background: #0a0a0a; border: 1px solid #333; border-radius: 8px; color: white; outline: none; transition: 0.2s; font-size: 0.95rem; }
+    .form-input:focus, .form-textarea:focus { border-color: #3b82f6; background: #0f0f0f; }
+    .form-textarea { min-height: 120px; resize: vertical; line-height: 1.5; }
+    
+    .form-actions { display: flex; gap: 1rem; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #333; }
+    .btn-primary { flex: 2; padding: 14px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 1rem; transition: 0.2s; }
+    .btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
+    .btn-secondary { flex: 1; padding: 14px; background: transparent; color: #aaa; border: 1px solid #333; border-radius: 8px; cursor: pointer; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 500; transition: 0.2s; }
+    .btn-secondary:hover { border-color: #666; color: white; }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const videoInput = document.getElementById('video_file');
+        const thumbnailInput = document.getElementById('thumbnail_input');
+        const videoZone = document.getElementById('videoUploadZone');
+        const thumbnailZone = document.getElementById('thumbnailUploadZone');
+        const previewVideo = document.getElementById('previewVideo');
+        const scrubberSection = document.getElementById('scrubberSection');
+        const scrubber = document.getElementById('videoScrubber');
+        const captureFrameBtn = document.getElementById('captureFrameBtn');
+        const frameCanvas = document.getElementById('frameCanvas');
+        const thumbnailPreview = document.getElementById('thumbnailPreviewContainer');
+        const thumbnailImg = document.getElementById('thumbnailPreviewImg');
+        const videoFileStatus = document.getElementById('videoFileStatus');
+
+        // Prevent default browser behavior
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            document.body.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
+        });
+
+        // Highlight/Unhighlight helpers
+        function highlight(zone) { zone.style.borderColor = '#3b82f6'; zone.style.backgroundColor = 'rgba(59,130,246,0.05)'; }
+        function unhighlight(zone) { zone.style.borderColor = '#333'; zone.style.backgroundColor = '#151515'; }
+
+        // --- Video Zone ---
+        videoZone.addEventListener('dragover', () => highlight(videoZone));
+        videoZone.addEventListener('dragleave', () => unhighlight(videoZone));
+        videoZone.addEventListener('drop', (e) => {
+            unhighlight(videoZone);
+            if (e.dataTransfer.files.length) handleVideo(e.dataTransfer.files[0]);
+        });
+        videoZone.addEventListener('click', () => videoInput.click());
+        videoInput.addEventListener('change', (e) => {
+            if (e.target.files.length) handleVideo(e.target.files[0]);
+        });
+
+        // --- Thumbnail Zone ---
+        thumbnailZone.addEventListener('dragover', () => highlight(thumbnailZone));
+        thumbnailZone.addEventListener('dragleave', () => unhighlight(thumbnailZone));
+        thumbnailZone.addEventListener('drop', (e) => {
+            unhighlight(thumbnailZone);
+            if (e.dataTransfer.files.length && e.dataTransfer.files[0].type.startsWith('image/')) {
+                setThumbnail(e.dataTransfer.files[0]);
+            }
+        });
+        thumbnailZone.addEventListener('click', () => thumbnailInput.click());
+        thumbnailInput.addEventListener('change', (e) => {
+            if (e.target.files.length) setThumbnail(e.target.files[0]);
+        });
+
+        function handleVideo(file) {
+            if (!file.type.startsWith('video/')) { alert("Not a video file"); return; }
+            videoInput.files = createFileList([file]);
+            document.getElementById('videoFileName').textContent = file.name;
+            document.getElementById('videoFileSize').textContent = (file.size / (1024*1024)).toFixed(2) + ' MB';
+            videoFileStatus.style.display = 'flex';
+            videoZone.style.display = 'none';
+            previewVideo.src = URL.createObjectURL(file);
+            scrubberSection.style.display = 'block';
+        }
+
+        // --- Scrubber & Capture ---
+        previewVideo.addEventListener('loadedmetadata', () => {
+            scrubber.max = previewVideo.duration;
+            document.getElementById('totalTime').textContent = formatTime(previewVideo.duration);
+        });
+        previewVideo.addEventListener('timeupdate', () => {
+            scrubber.value = previewVideo.currentTime;
+            document.getElementById('currentTime').textContent = formatTime(previewVideo.currentTime);
+        });
+        scrubber.addEventListener('input', (e) => {
+            previewVideo.currentTime = e.target.value;
+        });
+
+        // The "Action" function to set a file
+        window.setThumbnail = function(file) {
+            thumbnailInput.files = createFileList([file]);
+            thumbnailImg.src = URL.createObjectURL(file);
+            thumbnailPreview.style.display = 'block';
+            thumbnailZone.style.display = 'none';
+        }
+        
+        // Remove function
+        window.removeThumbnail = function() {
+            thumbnailInput.value = '';
+            thumbnailPreview.style.display = 'none';
+            thumbnailZone.style.display = 'flex';
+        }
+
+        // Manual Capture Click
+        captureFrameBtn.addEventListener('click', () => {
+            doCapture();
+            // Visual Feedback
+            const oldText = captureFrameBtn.innerHTML;
+            captureFrameBtn.innerHTML = '<i class="fa-solid fa-check"></i> Captured!';
+            setTimeout(() => captureFrameBtn.innerHTML = oldText, 2000);
+        });
+
+        // Actual Capture Logic (Reusable)
+        window.doCapture = function() {
+            if(previewVideo.readyState < 2) return; // Wait if video not loaded
+            const ctx = frameCanvas.getContext('2d');
+            frameCanvas.width = previewVideo.videoWidth;
+            frameCanvas.height = previewVideo.videoHeight;
+            ctx.drawImage(previewVideo, 0, 0);
+            
+            frameCanvas.toBlob((blob) => {
+                if(blob) {
+                    const file = new File([blob], "auto_capture.jpg", { type: "image/jpeg" });
+                    setThumbnail(file);
+                }
+            }, 'image/jpeg', 0.9);
+        }
+
+        // --- AUTO-CAPTURE ON SUBMIT ---
+        // This function runs when you click 'Publish'
+        window.prepareSubmission = function() {
+            // Check if thumbnail input is empty
+            if (!thumbnailInput.files.length) {
+                console.log("No thumbnail set. Auto-capturing...");
+                
+                // We must use synchronous logic or wait for blob.
+                // Since blob is async, we do a trick:
+                // We draw to canvas synchronously, then convert to DataURL (sync), 
+                // turn that into a Blob/File, and attach it.
+                
+                const ctx = frameCanvas.getContext('2d');
+                frameCanvas.width = previewVideo.videoWidth || 640;
+                frameCanvas.height = previewVideo.videoHeight || 360;
+                ctx.drawImage(previewVideo, 0, 0);
+                
+                // Convert to dataURL (Sync)
+                const dataUrl = frameCanvas.toDataURL('image/jpeg', 0.9);
+                
+                // Convert Base64 to File
+                const arr = dataUrl.split(','), mime = arr[0].match(/:(.*?);/)[1];
+                const bstr = atob(arr[1]); 
+                let n = bstr.length; 
+                const u8arr = new Uint8Array(n);
+                while(n--){ u8arr[n] = bstr.charCodeAt(n); }
+                const file = new File([u8arr], "auto_capture.jpg", {type:mime});
+                
+                // Force into input
+                thumbnailInput.files = createFileList([file]);
+            }
+            return true; // Allow form submission
+        };
+
+        function formatTime(s) {
+            const m = Math.floor(s / 60);
+            const sec = Math.floor(s % 60);
+            return `${m}:${sec.toString().padStart(2, '0')}`;
+        }
+        function createFileList(files) {
+            const dt = new DataTransfer();
+            files.forEach(f => dt.items.add(f));
+            return dt.files;
+        }
+    });
+</script>
+{% endblock %}

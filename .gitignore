@@ -1,0 +1,20 @@
+# --- Python & Virtual Env ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# --- IDE ---
+.vscode/
+.idea/
+
+# --- SnapStream Data (SECURE) ---
+# 1. Ignore Media Files (Too large)
+mock_aws/local_s3/*.mp4
+mock_aws/local_s3/*.jpg
+mock_aws/local_s3/*.png
+
+# 2. Ignore Database (Security Risk)
+# This keeps your users.json and videos.json OFF GitHub
+mock_aws/local_db/*.json

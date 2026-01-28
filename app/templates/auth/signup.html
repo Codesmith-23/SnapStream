@@ -1,0 +1,63 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-box">
+        <h2>Create Account</h2>
+        <p class="auth-subtitle">Join SnapStream today</p>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('auth.signup') }}">
+            
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" name="email" id="email" required placeholder="you@example.com">
+            </div>
+
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" name="username" id="username" required placeholder="Unique channel name" autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" name="password" id="password" required placeholder="Create a password">
+            </div>
+
+            <button type="submit" class="btn-primary full-width">Sign Up</button>
+        </form>
+
+        <div class="auth-footer">
+            Already have an account? <a href="{{ url_for('auth.login') }}">Log In</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .auth-container { display: flex; justify-content: center; align-items: center; min-height: 80vh; padding: 20px; }
+    .auth-box { background: #1a1a1a; padding: 2.5rem; border-radius: 16px; width: 100%; max-width: 400px; border: 1px solid #333; }
+    .auth-box h2 { color: white; margin-bottom: 0.5rem; text-align: center; }
+    .auth-subtitle { color: #888; text-align: center; margin-bottom: 2rem; font-size: 0.9rem; }
+    
+    .form-group { margin-bottom: 1.25rem; }
+    .form-group label { display: block; color: #ddd; margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 500; }
+    .form-group input { width: 100%; padding: 12px; background: #0f0f0f; border: 1px solid #333; border-radius: 8px; color: white; outline: none; transition: 0.2s; }
+    .form-group input:focus { border-color: #3b82f6; }
+    
+    .btn-primary.full-width { width: 100%; justify-content: center; margin-top: 1rem; }
+    
+    .auth-footer { text-align: center; margin-top: 1.5rem; color: #888; font-size: 0.9rem; }
+    .auth-footer a { color: #3b82f6; text-decoration: none; font-weight: 600; }
+    
+    .alert { padding: 10px; border-radius: 6px; margin-bottom: 1rem; font-size: 0.9rem; }
+    .alert-error { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; }
+    .alert-success { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid #10b981; }
+</style>
+{% endblock %}

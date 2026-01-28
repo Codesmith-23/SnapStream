@@ -1,0 +1,81 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="settings-container">
+    <div class="settings-header">
+        <h1>Settings</h1>
+        <p>Manage your account preferences</p>
+    </div>
+
+    <div class="settings-card">
+        <div class="profile-section">
+            <div class="large-avatar">
+                {{ user.username[0].upper() }}
+            </div>
+            <div class="profile-info">
+                <h2>{{ user.username }}</h2>
+                <p>{{ user.email }}</p>
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <form class="settings-form">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" value="{{ user.username }}" readonly class="form-input readonly">
+                <p class="form-hint">Username cannot be changed.</p>
+            </div>
+
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" value="{{ user.email }}" readonly class="form-input readonly">
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <button type="button" class="btn-secondary" disabled>Change Password (Coming Soon)</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .settings-container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+    
+    .settings-header { margin-bottom: 2rem; }
+    .settings-header h1 { font-size: 1.8rem; margin-bottom: 0.5rem; color: white; }
+    .settings-header p { color: #aaa; }
+
+    .settings-card { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 2rem; }
+
+    .profile-section { display: flex; align-items: center; gap: 20px; margin-bottom: 2rem; }
+    
+    .large-avatar {
+        width: 80px; height: 80px; border-radius: 50%; 
+        background: #3b82f6; color: white; font-size: 2rem; font-weight: 700;
+        display: flex; align-items: center; justify-content: center;
+    }
+    
+    .profile-info h2 { margin: 0 0 4px 0; color: white; }
+    .profile-info p { color: #aaa; margin: 0; }
+
+    .divider { border: 0; border-top: 1px solid #333; margin: 2rem 0; }
+
+    .form-group { margin-bottom: 1.5rem; }
+    .form-group label { display: block; color: #ddd; margin-bottom: 0.5rem; font-weight: 500; }
+    
+    .form-input { 
+        width: 100%; padding: 12px; background: #0f0f0f; border: 1px solid #333; 
+        border-radius: 8px; color: white; outline: none; font-size: 1rem;
+    }
+    .form-input.readonly { color: #777; cursor: not-allowed; background: #151515; }
+    
+    .form-hint { font-size: 0.8rem; color: #666; margin-top: 6px; }
+
+    .btn-secondary {
+        padding: 10px 20px; background: transparent; border: 1px solid #444; 
+        color: #aaa; border-radius: 6px; cursor: not-allowed;
+    }
+</style>
+{% endblock %}

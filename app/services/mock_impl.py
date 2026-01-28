@@ -1,0 +1,124 @@
+import json
+import os
+import uuid
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin
+
+# 1. USER CLASS
+class User(UserMixin):
+    def __init__(self, user_id, email, username="User"):
+        self.id = user_id
+        self.email = email
+        self.username = username
+
+# 2. MOCK USERS SERVICE
+class MockUsers:
+    def __init__(self, db_path):
+        self.db_path = os.path.join(db_path, 'users.json')
+        self._ensure_db()
+
+    def _ensure_db(self):
+        if not os.path.exists(self.db_path):
+            with open(self.db_path, 'w') as f: json.dump([], f)
+
+    def _read_users(self):
+        try:
+            with open(self.db_path, 'r') as f: return json.load(f)
+        except: return []
+
+    def _save_users(self, users):
+        with open(self.db_path, 'w') as f: json.dump(users, f, indent=4)
+
+    def get_user_by_id(self, user_id):
+        users = self._read_users()
+        for u in users:
+            if u['id'] == user_id:
+                return User(u['id'], u['email'], u.get('username', 'User'))
+        return None
+
+    def get_user_by_email(self, email):
+        users = self._read_users()
+        for u in users:
+            if u['email'] == email:
+                return User(u['id'], u['email'], u.get('username', 'User'))
+        return None
+
+    def validate_login(self, email, password):
+        users = self._read_users()
+        for u in users:
+            if u['email'] == email:
+                if check_password_hash(u['password_hash'], password):
+                    return User(u['id'], u['email'], u.get('username', 'User'))
+        return None
+
+    def create_user(self, email, username, password):
+        users = self._read_users()
+        if any(u['email'] == email for u in users):
+            return None, "Email already registered."
+        if any(u.get('username', '').lower() == username.lower() for u in users):
+            return None, "Username already taken."
+
+        new_user = {
+            'id': str(uuid.uuid4()),
+            'email': email,
+            'username': username,
+            'password_hash': generate_password_hash(password)
+        }
+        users.append(new_user)
+        self._save_users(users)
+        return User(new_user['id'], new_user['email'], new_user['username']), None
+
+# 3. MOCK STORAGE
+class MockStorage:
+    def __init__(self, base_path):
+        self.base_path = base_path
+        os.makedirs(self.base_path, exist_ok=True)
+
+    def upload_file(self, file_obj, filename):
+        full_path = os.path.join(self.base_path, filename)
+        file_obj.save(full_path)
+        return filename
+
+# 4. MOCK DATABASE (CLEANED - NO VIEWS/LIKES)
+class MockDatabase:
+    def __init__(self, db_path):
+        self.video_file = os.path.join(db_path, 'videos.json')
+        if not os.path.exists(self.video_file):
+            with open(self.video_file, 'w') as f: json.dump([], f)
+
+    def _read(self):
+        try:
+            with open(self.video_file, 'r') as f: return json.load(f)
+        except: return []
+
+    def _write(self, data):
+        with open(self.video_file, 'w') as f: json.dump(data, f, indent=4)
+
+    def put_video(self, title, description, tags, filename, user_id, thumbnail_filename=None):
+        videos = self._read()
+        tag_list = [t.strip() for t in tags.split(',')] if tags else []
+
+        new_video = {
+            'video_id': str(uuid.uuid4()),
+            'user_id': user_id,
+            'title': title,
+            'description': description,
+            'tags': tag_list,
+            'filename': filename,
+            'thumbnail': thumbnail_filename,
+            # REMOVED: views, likes, liked
+            'created_at': "2026-01-28" 
+        }
+        videos.insert(0, new_video)
+        self._write(videos)
+        return new_video
+    
+    def get_all_videos(self):
+        return self._read()
+
+# 5. STUBS
+class MockNotifier:
+    def notify(self, user_id, message): pass 
+
+class MockAnalyzer:
+    def analyze(self, video_path): return []
