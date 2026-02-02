@@ -1,212 +1,174 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div style="max-width: 1200px; margin: 0 auto; padding: 2rem;">
-
-    <!-- Header -->
-    <div style="margin-bottom: 2rem;">
-        <h1 style="font-size: 2rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">
-            <i class="fa-solid fa-chart-bar"></i> Admin Dashboard
-        </h1>
-        <p style="color: var(--text-muted);">Manage videos and view platform statistics</p>
+<div class="studio-container">
+    
+    <div class="studio-header">
+        <div class="header-left">
+            <h1>Channel Content</h1>
+            <p>Manage your videos and uploads</p>
+        </div>
+        <div class="header-right">
+            <a href="{{ url_for('web.upload_page') }}" class="btn-create">
+                <i class="fa-solid fa-plus"></i> Create
+            </a>
+        </div>
     </div>
 
-    <!-- Stats Grid -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+    <div class="video-list">
+        {% if videos|length > 0 %}
+            {% for video in videos %}
+            <div class="video-row">
+                
+                <div class="row-thumbnail">
+                    <a href="{{ url_for('web.watch', video_id=video.video_id) }}">
+                        {% if video.thumbnail %}
+                            <img src="{{ url_for('stream.stream_file', filename=video.thumbnail) }}" alt="Thumbnail">
+                        {% else %}
+                            <div class="no-thumb"><i class="fa-solid fa-play"></i></div>
+                        {% endif %}
+                    </a>
+                </div>
 
-        <!-- Total Videos -->
-        <div class="studio-card" style="padding: 1.5rem;">
-            <div style="display: flex; align-items: center; gap: 1rem;">
-                <div style="font-size: 2rem; color: var(--primary);">
-                    <i class="fa-solid fa-video"></i>
+                <div class="row-details">
+                    <a href="{{ url_for('web.watch', video_id=video.video_id) }}" class="row-title">
+                        {{ video.title }}
+                    </a>
+                    <p class="row-desc">
+                        {% if video.description %}
+                            {{ video.description[:100] }}{{ '...' if video.description|length > 100 else '' }}
+                        {% else %}
+                            No description provided.
+                        {% endif %}
+                    </p>
+                    <div class="row-meta">
+                        <span class="meta-tag">{{ video.created_at }}</span>
+                        {% if video.tags %}
+                            <span class="meta-dot">•</span>
+                            {% for tag in video.tags[:2] %}
+                                <span class="meta-tag">#{{ tag }}</span>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
                 </div>
-                <div>
-                    <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Total Videos</div>
-                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--text-main);">{{ stats.total_videos or 0 }}</div>
+
+                <div class="row-actions">
+                    <a href="{{ url_for('web.watch', video_id=video.video_id) }}" class="action-btn view-btn" title="Watch Video">
+                        <i class="fa-solid fa-eye"></i>
+                    </a>
+                    <button class="action-btn edit-btn" title="Edit Details (Coming Soon)">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button class="action-btn delete-btn" title="Delete Video (Coming Soon)">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
                 </div>
+
             </div>
-        </div>
-
-        <!-- Total Views -->
-        <div class="studio-card" style="padding: 1.5rem;">
-            <div style="display: flex; align-items: center; gap: 1rem;">
-                <div style="font-size: 2rem; color: #60a5fa;">
-                    <i class="fa-solid fa-eye"></i>
-                </div>
-                <div>
-                    <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Total Views</div>
-                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--text-main);">{{ stats.total_views or 0 }}</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Total Likes -->
-        <div class="studio-card" style="padding: 1.5rem;">
-            <div style="display: flex; align-items: center; gap: 1rem;">
-                <div style="font-size: 2rem; color: #ef4444;">
-                    <i class="fa-solid fa-heart"></i>
-                </div>
-                <div>
-                    <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Total Likes</div>
-                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--text-main);">{{ stats.total_likes or 0 }}</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Avg Views -->
-        <div class="studio-card" style="padding: 1.5rem;">
-            <div style="display: flex; align-items: center; gap: 1rem;">
-                <div style="font-size: 2rem; color: #22c55e;">
-                    <i class="fa-solid fa-chart-line"></i>
-                </div>
-                <div>
-                    <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Avg Views</div>
-                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--text-main);">{{ "%.0f"|format(stats.avg_views or 0) }}</div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- Video Management Table -->
-    <div class="studio-card" style="padding: 2rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-            <h2 style="font-size: 1.3rem; font-weight: 700; color: var(--text-main);">Video Library</h2>
-            <button onclick="location.reload()" class="btn-secondary" style="padding: 8px 16px; font-size: 0.9rem; cursor: pointer;">
-                <i class="fa-solid fa-rotate"></i> Refresh
-            </button>
-        </div>
-
-        {% if videos %}
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="border-bottom: 1px solid var(--border);">
-                        <th style="text-align: left; padding: 12px; font-weight: 600; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">Title</th>
-                        <th style="text-align: center; padding: 12px; font-weight: 600; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">Views</th>
-                        <th style="text-align: center; padding: 12px; font-weight: 600; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">Likes</th>
-                        <th style="text-align: center; padding: 12px; font-weight: 600; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">Uploaded</th>
-                        <th style="text-align: center; padding: 12px; font-weight: 600; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for video in videos %}
-                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
-                        <td style="padding: 12px; color: var(--text-main);">
-                            <div style="font-weight: 500;">{{ video.title or 'Untitled' }}</div>
-                            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem;">ID: {{ video.video_id[:8] }}...</div>
-                        </td>
-                        <td style="padding: 12px; text-align: center; color: var(--text-main);">{{ video.views or 0 }}</td>
-                        <td style="padding: 12px; text-align: center; color: var(--text-main);">{{ 1 if video.liked else 0 }}</td>
-                        <td style="padding: 12px; text-align: center; color: var(--text-muted); font-size: 0.9rem;">
-                            {{ video.created_at[:10] if video.created_at else 'N/A' }}
-                        </td>
-                        <td style="padding: 12px; text-align: center;">
-                            <button onclick="deleteVideo('{{ video.video_id }}', '{{ video.title }}')" style="padding: 6px 12px; background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s ease;">
-                                <i class="fa-solid fa-trash"></i> Delete
-                            </button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+            {% endfor %}
+        
         {% else %}
-        <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
-            <div style="font-size: 2rem; margin-bottom: 1rem;">
-                <i class="fa-solid fa-inbox"></i>
+            <div class="empty-studio">
+                <div class="empty-icon">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                </div>
+                <h3>No content yet</h3>
+                <p>Upload a video to get started with your studio.</p>
+                <a href="{{ url_for('web.upload_page') }}" class="btn-create">Upload Video</a>
             </div>
-            <p>No videos yet</p>
-        </div>
         {% endif %}
     </div>
 
 </div>
 
-<!-- Delete Confirmation Modal -->
-<div id="deleteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; justify-content: center; align-items: center;">
-    <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; max-width: 400px; backdrop-filter: blur(10px);">
-        <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-main);">Delete Video?</h3>
-        <p id="deleteModalTitle" style="color: var(--text-muted); margin-bottom: 1rem;"></p>
-        <p style="font-size: 0.85rem; color: #888; margin-bottom: 1.5rem;">This action cannot be undone.</p>
-        
-        <div style="display: flex; gap: 1rem;">
-            <button onclick="document.getElementById('deleteModal').style.display = 'none';" class="btn-secondary" style="flex: 1; padding: 10px; cursor: pointer;">
-                Cancel
-            </button>
-            <button id="confirmDeleteBtn" onclick="confirmDelete()" class="btn-primary" style="flex: 1; padding: 10px; cursor: pointer; background: #ef4444;">
-                Delete
-            </button>
-        </div>
-    </div>
-</div>
-
 <style>
-    .btn-primary {
-        background: linear-gradient(135deg, var(--primary) 0%, #2563eb 100%);
-        color: white;
-        padding: 10px 20px;
-        border: none;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease;
+    /* --- STUDIO THEME (Vibrant Dark) --- */
+    .studio-container { 
+        max-width: 1200px; margin: 0 auto; padding: 2rem; 
     }
 
-    .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(59, 130, 246, 0.35);
+    /* HEADER */
+    .studio-header { 
+        display: flex; justify-content: space-between; align-items: flex-end; 
+        margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);
+    }
+    .studio-header h1 { font-size: 1.8rem; color: var(--text-main); margin-bottom: 4px; }
+    .studio-header p { color: var(--text-muted); font-size: 0.9rem; }
+
+    .btn-create {
+        background: var(--primary-orange); color: white; padding: 10px 20px;
+        border-radius: 4px; text-decoration: none; font-weight: 700; font-size: 0.9rem;
+        display: flex; align-items: center; gap: 8px; transition: 0.2s;
+        text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .btn-create:hover { background: #F4511E; transform: translateY(-1px); }
+
+    /* VIDEO LIST (Rows) */
+    .video-list { display: flex; flex-direction: column; gap: 12px; }
+
+    .video-row {
+        display: flex; align-items: center; gap: 20px;
+        background: var(--bg-card); /* #202020 */
+        padding: 12px; border-radius: 8px; border: 1px solid var(--border);
+        transition: 0.2s;
+    }
+    .video-row:hover { 
+        background: #252525; 
+        border-color: #444; 
+        transform: translateX(4px); /* Subtle slide effect */
     }
 
-    .btn-secondary {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid var(--border);
-        color: var(--text-main);
-        padding: 10px 20px;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease;
+    /* 1. THUMBNAIL */
+    .row-thumbnail { 
+        width: 160px; aspect-ratio: 16/9; flex-shrink: 0; 
+        border-radius: 4px; overflow: hidden; background: #000;
+    }
+    .row-thumbnail img { width: 100%; height: 100%; object-fit: cover; opacity: 0.9; transition: 0.2s; }
+    .video-row:hover .row-thumbnail img { opacity: 1; }
+    
+    .no-thumb { 
+        width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; 
+        color: #444; font-size: 1.5rem; 
     }
 
-    .btn-secondary:hover {
-        background: rgba(255, 255, 255, 0.1);
-        border-color: var(--text-muted);
+    /* 2. DETAILS */
+    .row-details { flex: 1; min-width: 0; } /* min-width 0 prevents flex overflow */
+    
+    .row-title { 
+        display: block; font-size: 1.1rem; font-weight: 700; 
+        color: var(--text-main); text-decoration: none; margin-bottom: 4px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
+    .row-title:hover { color: var(--primary-orange); }
+
+    .row-desc { 
+        color: var(--text-muted); font-size: 0.85rem; margin-bottom: 8px; 
+        display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    .row-meta { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: #888; }
+    .meta-tag { background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; }
+    .meta-dot { color: #444; }
+
+    /* 3. ACTIONS */
+    .row-actions { display: flex; gap: 8px; }
+    
+    .action-btn {
+        width: 36px; height: 36px; border-radius: 50%; border: none;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: 0.2s; background: transparent; color: #666;
+    }
+    .action-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-main); }
+    
+    .view-btn:hover { color: var(--primary-orange); }
+    .edit-btn:hover { color: var(--accent-purple); }
+    .delete-btn:hover { color: #ef4444; }
+
+    /* EMPTY STATE */
+    .empty-studio { text-align: center; padding: 4rem 2rem; color: var(--text-muted); }
+    .empty-icon { font-size: 4rem; color: #333; margin-bottom: 1rem; }
+    .empty-studio h3 { color: var(--text-main); font-size: 1.5rem; margin-bottom: 0.5rem; }
+    .empty-studio p { margin-bottom: 1.5rem; }
+    .empty-studio .btn-create { display: inline-flex; width: auto; }
 </style>
-
-<script>
-    let pendingDeleteId = null;
-
-    function deleteVideo(videoId, title) {
-        pendingDeleteId = videoId;
-        document.getElementById('deleteModalTitle').textContent = `Delete "${title}"?`;
-        document.getElementById('deleteModal').style.display = 'flex';
-    }
-
-    function confirmDelete() {
-        if (!pendingDeleteId) return;
-
-        fetch(`/api/admin/videos/${pendingDeleteId}`, { method: 'DELETE' })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Failed to delete video');
-                }
-            })
-            .catch(err => {
-                console.error('Delete error:', err);
-                alert('Error deleting video');
-            });
-    }
-
-    // Close modal on Escape
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            document.getElementById('deleteModal').style.display = 'none';
-        }
-    });
-</script>
 {% endblock %}

@@ -80,13 +80,17 @@ def upload():
         flash('Video uploaded successfully!', 'success')
         return redirect(url_for('web.gallery'))
 
+
 @web_bp.route('/admin')
 @login_required
 def admin():
-    # Filter videos for the current logged-in user only
+    # 1. Get all videos from DB
     all_videos = db_service.get_all_videos()
+    
+    # 2. FILTER: Keep only videos where user_id matches the logged-in user
     my_videos = [v for v in all_videos if v['user_id'] == current_user.id]
     
+    # 3. Render the new template
     return render_template('admin.html', videos=my_videos)
 
 @web_bp.route('/settings', methods=['GET', 'POST'])
