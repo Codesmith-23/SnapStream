@@ -1,262 +1,132 @@
-# app/routes/web.py
-# Web Routes: Gallery, Upload, Admin, and Settings
-# Integrated with Flask-Login and Mock Services
-
-import logging
-import uuid
-from datetime import datetime
-from flask import Blueprint, render_template, request, redirect, url_for, current_app, flash
+import os
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, current_app
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 
-# Configure logging
-logger = logging.getLogger(__name__)
+# Import your services
+from app.services.mock_impl import MockUsers, MockStorage, MockDatabase
 
 web_bp = Blueprint('web', __name__)
 
-# Configuration
-ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov', 'avi', 'webm', 'mkv'}
-ALLOWED_IMAGE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
-MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024  # 2GB
+# --- INITIALIZE SERVICES ---
+# We need these variables to be available to all functions below
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+MOCK_DIR = os.path.join(BASE_DIR, 'mock_aws')
 
-
-def allowed_video_file(filename):
-    """Check if video file has allowed extension"""
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_VIDEO_EXTENSIONS
-
-
-def allowed_image_file(filename):
-    """Check if image file has allowed extension"""
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
-
-
-# ============================================
-# HOME / GALLERY PAGE
-# ============================================
+users_service = MockUsers(os.path.join(MOCK_DIR, 'local_db'))
+storage_service = MockStorage(os.path.join(MOCK_DIR, 'local_s3'))
+db_service = MockDatabase(os.path.join(MOCK_DIR, 'local_db'))
 
 @web_bp.route('/')
-def index():
-    """Render the Landing Page (index.html)"""
-    return render_template('index.html')
-
-@web_bp.route('/gallery', methods=['GET'])
 def gallery():
-    """
-    Render gallery with all videos.
-    Supports optional search query parameter.
-    """
-    try:
-        db = current_app.services['db']  # Changed 'database' to 'db' to match your config
-        
-        # Get search query if present
-        search_query = request.args.get('search', '').strip()
-        
-        if search_query:
-            logger.info(f'[INFO] Gallery search: query="{search_query}"')
-            videos = db.search(search_query)
-        else:
-            logger.info('[INFO] Gallery loaded: displaying all videos')
-            videos = db.get_all_videos()
-        
-        # Sort by creation date (newest first)
-        if videos:
-            videos.sort(key=lambda v: v.get('created_at', ''), reverse=True)
-        
-        logger.info(f'[INFO] Gallery rendered: {len(videos)} videos')
-        return render_template('gallery.html', videos=videos, search_query=search_query)
+    videos = db_service.get_all_videos()
+    search_query = request.args.get('search', '').lower()
     
-    except Exception as e:
-        logger.error(f'[ERROR] Gallery load failed: {str(e)}')
-        return render_template('gallery.html', videos=[], error='Failed to load gallery'), 500
+    if search_query:
+        videos = [v for v in videos if search_query in v['title'].lower() or search_query in ' '.join(v['tags']).lower()]
+    
+    return render_template('gallery.html', videos=videos)
 
+@web_bp.route('/watch/<video_id>')
+def watch(video_id):
+    videos = db_service.get_all_videos()
+    video = next((v for v in videos if v['video_id'] == video_id), None)
+    
+    if not video:
+        return render_template('404.html'), 404
+    
+    return render_template('watch.html', video=video)
 
-# ============================================
-# UPLOAD PAGE & HANDLER
-# ============================================
-
-@web_bp.route('/upload', methods=['GET'])
-@login_required  # <--- Integrated Flask-Login
+@web_bp.route('/upload', methods=['GET', 'POST'])
+@login_required
 def upload_page():
-    """Render upload form"""
-    logger.info(f'[INFO] Upload page accessed by user {current_user.id}')
+    if request.method == 'POST':
+        return upload()
     return render_template('upload.html')
 
-
-# app/routes/web.py
-
-# ... (keep imports and top code) ...
-
-@web_bp.route('/upload', methods=['POST'])
-@login_required
 def upload():
-    upload_id = str(uuid.uuid4())[:8]
-    
-    try:
-        storage = current_app.services['storage']
-        db = current_app.services['db']
+    if 'video_file' not in request.files:
+        flash('No video file part', 'error')
+        return redirect(request.url)
         
-        # 1. Validate Video
-        if 'video_file' not in request.files:
-            return {'error': 'No video file provided'}, 400
-        
-        video_file = request.files['video_file']
-        if video_file.filename == '':
-            return {'error': 'No file selected'}, 400
-        
-        # 2. Validate Metadata
-        title = request.form.get('title', 'Untitled')
-        description = request.form.get('description', '')
-        tags = request.form.get('tags', '')
-        
-        # 3. Save Video
-        ext = video_file.filename.split('.')[-1]
-        video_filename = f"vid_{upload_id}_{int(datetime.now().timestamp())}.{ext}"
-        storage.upload_file(video_file, video_filename)
-        
-        # 4. Handle Thumbnail (THE FIX IS HERE)
-        thumbnail_filename = None
-        
-        # Check for BOTH possible names
-        if 'thumbnail' in request.files:
-            thumb_file = request.files['thumbnail']
-        elif 'thumbnail_file' in request.files:
-            thumb_file = request.files['thumbnail_file']
-        else:
-            thumb_file = None
+    file = request.files['video_file']
+    if file.filename == '':
+        flash('No selected file', 'error')
+        return redirect(request.url)
 
-        # Process the found file
-        if thumb_file and thumb_file.filename:
-            t_ext = thumb_file.filename.split('.')[-1]
-            # Handle blobs that might not have extensions
-            if not t_ext or len(t_ext) > 4: t_ext = 'jpg'
-                
-            t_name = f"thumb_{upload_id}_{int(datetime.now().timestamp())}.{t_ext}"
-            thumbnail_filename = storage.upload_file(thumb_file, t_name)
-            print(f"[DEBUG] Saved thumbnail as: {thumbnail_filename}")
+    if file:
+        filename = secure_filename(file.filename)
+        # Upload Video
+        saved_filename = storage_service.upload_file(file, filename)
         
-        # 5. Save DB Entry
-        db.put_video(
-            title, 
-            description, 
-            tags, 
-            video_filename, 
-            current_user.id, 
+        # Handle Thumbnail
+        thumbnail_filename = None
+        if 'thumbnail' in request.files:
+            thumb = request.files['thumbnail']
+            if thumb.filename != '':
+                t_name = secure_filename(thumb.filename)
+                thumbnail_filename = storage_service.upload_file(thumb, t_name)
+
+        # Save to DB
+        db_service.put_video(
+            title=request.form.get('title'),
+            description=request.form.get('description'),
+            tags=request.form.get('tags'),
+            filename=saved_filename,
+            user_id=current_user.id,
             thumbnail_filename=thumbnail_filename
         )
         
-        flash('Upload successful!', 'success')
+        flash('Video uploaded successfully!', 'success')
         return redirect(url_for('web.gallery'))
-    
-    except Exception as e:
-        logger.error(f'[ERROR] Upload failed: {str(e)}')
-        return {'error': 'Upload failed'}, 500
-    
-# ============================================
-# ADMIN DASHBOARD
-# ============================================
 
-@web_bp.route('/admin', methods=['GET'])
+@web_bp.route('/admin')
 @login_required
 def admin():
-    """
-    Admin dashboard for managing videos.
-    """
-    try:
-        db = current_app.services['db']
-        logger.info('[INFO] Admin dashboard accessed')
-        
-        # Get all videos
-        videos = db.get_all_videos()
-        
-        # Simple Stats
-        stats = {
-            'total_videos': len(videos),
-            'total_views': sum(v.get('views', 0) for v in videos),
-            'total_likes': sum(1 for v in videos if v.get('liked', False))
-        }
-        
-        return render_template('admin.html', videos=videos, stats=stats)
+    # Filter videos for the current logged-in user only
+    all_videos = db_service.get_all_videos()
+    my_videos = [v for v in all_videos if v['user_id'] == current_user.id]
     
-    except Exception as e:
-        logger.error(f'[ERROR] Admin dashboard load failed: {str(e)}')
-        return render_template('admin.html', videos=[], stats={}, error='Failed to load dashboard'), 500
-
-
-# ============================================
-# SETTINGS PAGE
-# ============================================
+    return render_template('admin.html', videos=my_videos)
 
 @web_bp.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
-    """
-    User settings page (profile, preferences).
-    """
     if request.method == 'POST':
-        # Handle Avatar Update
-        if 'avatar' in request.files:
-            avatar_file = request.files['avatar']
+        action = request.form.get('action')
+        
+        # --- HANDLE PROFILE UPDATE ---
+        if action == 'update_profile':
+            new_username = request.form.get('username')
+            avatar_file = request.files.get('avatar')
+            
+            avatar_filename = None
             if avatar_file and avatar_file.filename:
-                storage = current_app.services['storage']
-                users = current_app.services['users']
-                
-                ext = avatar_file.filename.split('.')[-1]
-                fname = f"avatar_{current_user.id}_{int(datetime.now().timestamp())}.{ext}"
-                
-                storage.upload_file(avatar_file, fname)
-                users.update_avatar(current_user.id, fname)
-                flash('Profile updated!', 'success')
-                
+                safe_name = secure_filename(avatar_file.filename)
+                unique_name = f"avatar_{current_user.id}_{safe_name}"
+                avatar_filename = storage_service.upload_file(avatar_file, unique_name)
+
+            success, msg = users_service.update_profile(current_user.id, new_username, avatar_filename)
+            if success:
+                flash(msg, 'success')
+            else:
+                flash(msg, 'error')
+
+        # --- HANDLE PASSWORD CHANGE ---
+        elif action == 'change_password':
+            current_pass = request.form.get('current_password')
+            new_pass = request.form.get('new_password')
+            confirm_pass = request.form.get('confirm_password')
+
+            if new_pass != confirm_pass:
+                flash("New passwords do not match.", 'error')
+            else:
+                success, msg = users_service.change_password(current_user.id, current_pass, new_pass)
+                if success:
+                    flash(msg, 'success')
+                else:
+                    flash(msg, 'error')
+
         return redirect(url_for('web.settings'))
 
     return render_template('settings.html', user=current_user)
-
-
-@web_bp.route('/watch/<video_id>')
-def watch(video_id):
-    db = current_app.services['db']
-    videos = db.get_all_videos()
-    
-    # Find the specific video
-    video = next((v for v in videos if v['video_id'] == video_id), None)
-    
-    if not video:
-        abort(404)
-        
-    # Get other videos for "Up Next" (excluding current one)
-    recommendations = [v for v in videos if v['video_id'] != video_id]
-    
-    return render_template('watch.html', video=video, recommended=recommendations)
-
-
-@web_bp.route('/video/<video_id>/like', methods=['POST'])
-@login_required
-def like(video_id):
-    """
-    STUB: Keeps the server happy when 'watch.html' tries to generate the Like URL.
-    Does not actually save to DB yet.
-    """
-    return {'liked': True, 'likes': 1}
-
-
-
-@web_bp.route('/video/<video_id>/view', methods=['POST'])
-def count_view(video_id):
-    """
-    STUB: Placeholder for view counting.
-    """
-    return {'views': 1}
-
-# ============================================
-# ERROR HANDLERS
-# ============================================
-
-@web_bp.errorhandler(404)
-def page_not_found(e):
-    logger.warning(f'[WARN] 404 Not Found: {request.path}')
-    return render_template('errors/404.html'), 404
-
-@web_bp.route('/logout')
-@login_required
-def logout():
-    return redirect(url_for('auth.logout'))

@@ -1,15 +1,17 @@
 import json
 import os
 import uuid
+import re
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 
-# 1. USER CLASS
+# 1. USER CLASS (Updated with avatar)
 class User(UserMixin):
-    def __init__(self, user_id, email, username="User"):
+    def __init__(self, user_id, email, username="User", avatar=None):
         self.id = user_id
         self.email = email
         self.username = username
+        self.avatar = avatar  # New field
 
 # 2. MOCK USERS SERVICE
 class MockUsers:
@@ -33,14 +35,14 @@ class MockUsers:
         users = self._read_users()
         for u in users:
             if u['id'] == user_id:
-                return User(u['id'], u['email'], u.get('username', 'User'))
+                return User(u['id'], u['email'], u.get('username', 'User'), u.get('avatar'))
         return None
 
     def get_user_by_email(self, email):
         users = self._read_users()
         for u in users:
             if u['email'] == email:
-                return User(u['id'], u['email'], u.get('username', 'User'))
+                return User(u['id'], u['email'], u.get('username', 'User'), u.get('avatar'))
         return None
 
     def validate_login(self, email, password):
@@ -48,44 +50,89 @@ class MockUsers:
         for u in users:
             if u['email'] == email:
                 if check_password_hash(u['password_hash'], password):
-                    return User(u['id'], u['email'], u.get('username', 'User'))
+                    return User(u['id'], u['email'], u.get('username', 'User'), u.get('avatar'))
         return None
-
-    # ... inside MockUsers class ...
 
     def create_user(self, email, username, password):
         users = self._read_users()
+        # Uniqueness Check
         if any(u['email'] == email for u in users):
             return None, "Email already registered."
         if any(u.get('username', '').lower() == username.lower() for u in users):
             return None, "Username already taken."
 
-        # --- SERVER SIDE VALIDATION ---
-        import re
-        if len(password) < 8:
-            return None, "Password must be at least 8 characters."
-        if not re.search(r"[a-z]", password):
-            return None, "Password must contain a lowercase letter."
-        if not re.search(r"[A-Z]", password):
-            return None, "Password must contain an uppercase letter."
-        if not re.search(r"[0-9]", password):
-            return None, "Password must contain a number."
-        if not re.search(r"[^A-Za-z0-9]", password):
-            return None, "Password must contain a special symbol."
-        # -------------------------------
+        # Password Strength Check
+        if len(password) < 8: return None, "Password must be at least 8 characters."
+        if not re.search(r"[a-z]", password): return None, "Password must contain a lowercase letter."
+        if not re.search(r"[A-Z]", password): return None, "Password must contain an uppercase letter."
+        if not re.search(r"[0-9]", password): return None, "Password must contain a number."
+        if not re.search(r"[^A-Za-z0-9]", password): return None, "Password must contain a special symbol."
 
         new_user = {
             'id': str(uuid.uuid4()),
             'email': email,
             'username': username,
-            'password_hash': generate_password_hash(password)
+            'password_hash': generate_password_hash(password),
+            'avatar': None
         }
         users.append(new_user)
         self._save_users(users)
         return User(new_user['id'], new_user['email'], new_user['username']), None
-    
-    
-# 3. MOCK STORAGE
+
+    # NEW: Update Profile Method
+    def update_profile(self, user_id, new_username, new_avatar_filename=None):
+        users = self._read_users()
+        target_user = None
+        for u in users:
+            if u['id'] == user_id:
+                target_user = u
+                break
+        
+        if not target_user:
+            return False, "User not found."
+
+        # Uniqueness Check (Skip if username hasn't changed)
+        if new_username.lower() != target_user['username'].lower():
+            if any(u.get('username', '').lower() == new_username.lower() for u in users):
+                return False, "Username already taken."
+
+        # Update fields
+        target_user['username'] = new_username
+        if new_avatar_filename:
+            target_user['avatar'] = new_avatar_filename
+        
+        self._save_users(users)
+        return True, "Profile updated successfully."
+
+    # NEW: Change Password Method
+    def change_password(self, user_id, old_password, new_password):
+        users = self._read_users()
+        target_user = None
+        for u in users:
+            if u['id'] == user_id:
+                target_user = u
+                break
+        
+        if not target_user:
+            return False, "User not found."
+
+        # Verify Old Password
+        if not check_password_hash(target_user['password_hash'], old_password):
+            return False, "Incorrect current password."
+
+        # Validate New Password Strength
+        if len(new_password) < 8: return False, "Password must be at least 8 characters."
+        if not re.search(r"[a-z]", new_password): return False, "New password must contain a lowercase letter."
+        if not re.search(r"[A-Z]", new_password): return False, "New password must contain an uppercase letter."
+        if not re.search(r"[0-9]", new_password): return False, "New password must contain a number."
+        if not re.search(r"[^A-Za-z0-9]", new_password): return False, "New password must contain a special symbol."
+
+        # Update Password
+        target_user['password_hash'] = generate_password_hash(new_password)
+        self._save_users(users)
+        return True, "Password changed successfully."
+
+# 3. MOCK STORAGE (Unchanged)
 class MockStorage:
     def __init__(self, base_path):
         self.base_path = base_path
@@ -96,7 +143,7 @@ class MockStorage:
         file_obj.save(full_path)
         return filename
 
-# 4. MOCK DATABASE (CLEANED - NO VIEWS/LIKES)
+# 4. MOCK DATABASE (Unchanged)
 class MockDatabase:
     def __init__(self, db_path):
         self.video_file = os.path.join(db_path, 'videos.json')
@@ -123,7 +170,6 @@ class MockDatabase:
             'tags': tag_list,
             'filename': filename,
             'thumbnail': thumbnail_filename,
-            # REMOVED: views, likes, liked
             'created_at': "2026-01-28" 
         }
         videos.insert(0, new_video)
