@@ -14,24 +14,53 @@
           {% endif %}
         {% endwith %}
 
-        <form method="POST" action="{{ url_for('auth.signup') }}">
+        <form method="POST" action="{{ url_for('auth.signup') }}" id="signupForm">
             
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" name="username" id="username" required placeholder="Choose a username">
+            </div>
+
             <div class="form-group">
                 <label for="email">Email Address</label>
                 <input type="email" name="email" id="email" required placeholder="you@example.com">
             </div>
 
             <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" name="username" id="username" required placeholder="Unique channel name" autocomplete="off">
+                <label for="password">Password</label>
+                <div class="password-wrapper">
+                    <input type="password" name="password" id="password" required placeholder="Create a strong password">
+                    <button type="button" class="toggle-password" onclick="togglePassword('password', this)">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+                
+                <div class="strength-meter">
+                    <div class="strength-bar" id="strengthBar"></div>
+                </div>
+                <p class="strength-text" id="strengthText">Password Strength: Weak</p>
+
+                <ul class="password-requirements">
+                    <li id="req-length"><i class="fa-regular fa-circle"></i> At least 8 characters</li>
+                    <li id="req-lower"><i class="fa-regular fa-circle"></i> One lowercase letter</li>
+                    <li id="req-upper"><i class="fa-regular fa-circle"></i> One uppercase letter</li>
+                    <li id="req-number"><i class="fa-regular fa-circle"></i> One number</li>
+                    <li id="req-symbol"><i class="fa-regular fa-circle"></i> One symbol (@$!%*?&)</li>
+                </ul>
             </div>
 
             <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" name="password" id="password" required placeholder="Create a password">
+                <label for="confirm_password">Confirm Password</label>
+                <div class="password-wrapper">
+                    <input type="password" name="confirm_password" id="confirm_password" required placeholder="Confirm your password">
+                    <button type="button" class="toggle-password" onclick="togglePassword('confirm_password', this)">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+                <p id="match-text" class="match-text"></p>
             </div>
 
-            <button type="submit" class="btn-primary full-width">Sign Up</button>
+            <button type="submit" class="auth-btn" id="submitBtn" disabled>Sign Up</button>
         </form>
 
         <div class="auth-footer">
@@ -41,23 +70,176 @@
 </div>
 
 <style>
+    /* BASIC LAYOUT */
     .auth-container { display: flex; justify-content: center; align-items: center; min-height: 80vh; padding: 20px; }
-    .auth-box { background: #1a1a1a; padding: 2.5rem; border-radius: 16px; width: 100%; max-width: 400px; border: 1px solid #333; }
+    .auth-box { background: #1a1a1a; padding: 2.5rem; border-radius: 16px; width: 100%; max-width: 450px; border: 1px solid #333; }
     .auth-box h2 { color: white; margin-bottom: 0.5rem; text-align: center; }
     .auth-subtitle { color: #888; text-align: center; margin-bottom: 2rem; font-size: 0.9rem; }
     
     .form-group { margin-bottom: 1.25rem; }
     .form-group label { display: block; color: #ddd; margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 500; }
-    .form-group input { width: 100%; padding: 12px; background: #0f0f0f; border: 1px solid #333; border-radius: 8px; color: white; outline: none; transition: 0.2s; }
+    
+    .form-group input { 
+        width: 100%; padding: 12px; background: #0f0f0f; border: 1px solid #333; 
+        border-radius: 8px; color: white; outline: none; transition: 0.2s; 
+    }
     .form-group input:focus { border-color: #3b82f6; }
-    
-    .btn-primary.full-width { width: 100%; justify-content: center; margin-top: 1rem; }
-    
+
+    /* PASSWORD TOGGLE */
+    .password-wrapper { position: relative; }
+    .toggle-password {
+        position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+        background: none; border: none; color: #888; cursor: pointer; font-size: 0.9rem;
+    }
+    .toggle-password:hover { color: #3b82f6; }
+
+    /* STRENGTH METER */
+    .strength-meter { height: 4px; background: #333; border-radius: 2px; margin-top: 8px; overflow: hidden; }
+    .strength-bar { height: 100%; width: 0%; transition: width 0.3s, background-color 0.3s; }
+    .strength-text { font-size: 0.8rem; color: #888; margin-top: 5px; text-align: right; }
+
+    /* REQUIREMENTS LIST */
+    .password-requirements { list-style: none; padding: 0; margin-top: 10px; }
+    .password-requirements li { font-size: 0.85rem; color: #666; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+    .password-requirements li.valid { color: #10b981; }
+    .password-requirements li i { font-size: 0.8rem; }
+
+    /* BUTTONS */
+    .auth-btn { 
+        width: 100%; padding: 12px; background-color: #3b82f6; color: white; 
+        border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; 
+        cursor: pointer; margin-top: 1rem; transition: 0.2s; 
+    }
+    .auth-btn:hover { background-color: #2563eb; }
+    .auth-btn:disabled { background-color: #333; color: #666; cursor: not-allowed; }
+
     .auth-footer { text-align: center; margin-top: 1.5rem; color: #888; font-size: 0.9rem; }
     .auth-footer a { color: #3b82f6; text-decoration: none; font-weight: 600; }
     
-    .alert { padding: 10px; border-radius: 6px; margin-bottom: 1rem; font-size: 0.9rem; }
-    .alert-error { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; }
-    .alert-success { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid #10b981; }
+    .alert { padding: 10px; border-radius: 6px; margin-bottom: 1rem; font-size: 0.9rem; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; }
+    .match-text { font-size: 0.8rem; margin-top: 5px; min-height: 1.2em; }
 </style>
+
+<script>
+    // 1. SHOW/HIDE PASSWORD
+    function togglePassword(inputId, btn) {
+        const input = document.getElementById(inputId);
+        const icon = btn.querySelector('i');
+        if (input.type === "password") {
+            input.type = "text";
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = "password";
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+
+    // 2. PASSWORD STRENGTH LOGIC
+    const passwordInput = document.getElementById('password');
+    const confirmInput = document.getElementById('confirm_password');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // Requirements Elements
+    const reqs = {
+        length: document.getElementById('req-length'),
+        lower: document.getElementById('req-lower'),
+        upper: document.getElementById('req-upper'),
+        number: document.getElementById('req-number'),
+        symbol: document.getElementById('req-symbol')
+    };
+
+    function checkPassword() {
+        const val = passwordInput.value;
+        let score = 0;
+
+        // Check Rules
+        const rules = {
+            length: val.length >= 8,
+            lower: /[a-z]/.test(val),
+            upper: /[A-Z]/.test(val),
+            number: /[0-9]/.test(val),
+            symbol: /[^A-Za-z0-9]/.test(val)
+        };
+
+        // Update UI List
+        for (const [key, met] of Object.entries(rules)) {
+            const el = reqs[key];
+            const icon = el.querySelector('i');
+            if (met) {
+                el.classList.add('valid');
+                icon.classList.remove('fa-circle');
+                icon.classList.add('fa-check-circle');
+                score++;
+            } else {
+                el.classList.remove('valid');
+                icon.classList.remove('fa-check-circle');
+                icon.classList.add('fa-circle');
+            }
+        }
+
+        // Update Bar
+        const bar = document.getElementById('strengthBar');
+        const text = document.getElementById('strengthText');
+        const width = (score / 5) * 100;
+        bar.style.width = width + '%';
+
+        if (score <= 2) {
+            bar.style.backgroundColor = '#ef4444'; // Red
+            text.textContent = 'Password Strength: Weak';
+            text.style.color = '#ef4444';
+        } else if (score <= 4) {
+            bar.style.backgroundColor = '#f59e0b'; // Orange
+            text.textContent = 'Password Strength: Medium';
+            text.style.color = '#f59e0b';
+        } else {
+            bar.style.backgroundColor = '#10b981'; // Green
+            text.textContent = 'Password Strength: Strong';
+            text.style.color = '#10b981';
+        }
+
+        validateForm(score);
+    }
+
+    // 3. CONFIRM MATCH LOGIC
+    function checkMatch() {
+        const matchText = document.getElementById('match-text');
+        if (confirmInput.value && passwordInput.value !== confirmInput.value) {
+            matchText.textContent = "Passwords do not match";
+            matchText.style.color = "#ef4444";
+            return false;
+        } else if (confirmInput.value) {
+            matchText.textContent = "Passwords match";
+            matchText.style.color = "#10b981";
+            return true;
+        }
+        matchText.textContent = "";
+        return false;
+    }
+
+    function validateForm(score) {
+        const isMatch = passwordInput.value === confirmInput.value;
+        // Enable button only if score is 5 (all rules met) AND passwords match
+        if (score === 5 && isMatch && passwordInput.value.length > 0) {
+            submitBtn.disabled = false;
+        } else {
+            submitBtn.disabled = true;
+        }
+    }
+
+    passwordInput.addEventListener('input', checkPassword);
+    confirmInput.addEventListener('input', () => {
+        checkMatch();
+        // Re-run validation logic
+        const val = passwordInput.value;
+        let score = 0;
+        if(val.length >=8) score++;
+        if(/[a-z]/.test(val)) score++;
+        if(/[A-Z]/.test(val)) score++;
+        if(/[0-9]/.test(val)) score++;
+        if(/[^A-Za-z0-9]/.test(val)) score++;
+        validateForm(score);
+    });
+</script>
 {% endblock %}

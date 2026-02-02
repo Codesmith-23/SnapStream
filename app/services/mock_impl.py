@@ -51,12 +51,28 @@ class MockUsers:
                     return User(u['id'], u['email'], u.get('username', 'User'))
         return None
 
+    # ... inside MockUsers class ...
+
     def create_user(self, email, username, password):
         users = self._read_users()
         if any(u['email'] == email for u in users):
             return None, "Email already registered."
         if any(u.get('username', '').lower() == username.lower() for u in users):
             return None, "Username already taken."
+
+        # --- SERVER SIDE VALIDATION ---
+        import re
+        if len(password) < 8:
+            return None, "Password must be at least 8 characters."
+        if not re.search(r"[a-z]", password):
+            return None, "Password must contain a lowercase letter."
+        if not re.search(r"[A-Z]", password):
+            return None, "Password must contain an uppercase letter."
+        if not re.search(r"[0-9]", password):
+            return None, "Password must contain a number."
+        if not re.search(r"[^A-Za-z0-9]", password):
+            return None, "Password must contain a special symbol."
+        # -------------------------------
 
         new_user = {
             'id': str(uuid.uuid4()),
@@ -67,7 +83,8 @@ class MockUsers:
         users.append(new_user)
         self._save_users(users)
         return User(new_user['id'], new_user['email'], new_user['username']), None
-
+    
+    
 # 3. MOCK STORAGE
 class MockStorage:
     def __init__(self, base_path):
