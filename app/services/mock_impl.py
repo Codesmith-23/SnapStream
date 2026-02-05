@@ -47,11 +47,19 @@ class MockUsers:
 
     def validate_login(self, email, password):
         users = self._read_users()
-        for u in users:
-            if u['email'] == email:
-                if check_password_hash(u['password_hash'], password):
-                    return User(u['id'], u['email'], u.get('username', 'User'), u.get('avatar'))
-        return None
+        
+        # 1. Check if email exists
+        user = next((u for u in users if u['email'] == email), None)
+        
+        if not user:
+            # This handles "Pussy23" (missing @) AND valid emails that just aren't registered
+            return None, "Email not found or incorrect."
+            
+        # 2. Check Password
+        if check_password_hash(user['password_hash'], password):
+            return User(user['id'], user['email'], user.get('username', 'User'), user.get('avatar')), None
+        
+        return None, "Incorrect password."
 
     def create_user(self, email, username, password):
         users = self._read_users()

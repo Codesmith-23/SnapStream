@@ -1,59 +1,64 @@
-import logging
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
-from flask_login import login_user, logout_user, login_required, current_user
+import os
+from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask_login import login_user, logout_user, login_required
+from app.services.mock_impl import MockUsers
 
-logger = logging.getLogger(__name__)
-auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
+auth_bp = Blueprint('auth', __name__)
+
+# --- INITIALIZE SERVICES ---
+# We must re-initialize the service here so this file can access the database
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+MOCK_DIR = os.path.join(BASE_DIR, 'mock_aws')
+
+# Initialize the User Service
+users_service = MockUsers(os.path.join(MOCK_DIR, 'local_db'))
+
+@auth_bp.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+
+        if password != confirm_password:
+            flash('Passwords do not match.', 'error')
+            return redirect(url_for('auth.signup'))
+
+        # Create user returns a tuple: (user_object, error_message)
+        user, error = users_service.create_user(email, username, password)
+
+        if user:
+            login_user(user)
+            flash('Account created successfully!', 'success')
+            return redirect(url_for('web.gallery'))
+        else:
+            flash(error, 'error')
+
+    return render_template('auth/signup.html')
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('web.gallery'))
-    
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
         remember = True if request.form.get('remember') else False
-        
-        user_service = current_app.services['users']
-        user = user_service.validate_login(email, password)
-        
+
+        # Validate returns a tuple: (user_object, error_message)
+        user, error = users_service.validate_login(email, password)
+
         if user:
             login_user(user, remember=remember)
-            next_page = request.args.get('next')
-            return redirect(next_page or url_for('web.gallery'))
-        
-        flash('Invalid email or password', 'error')
-    
-    return render_template('auth/login.html')
-
-@auth_bp.route('/signup', methods=['GET', 'POST'])
-def signup():
-    if current_user.is_authenticated:
-        return redirect(url_for('web.gallery'))
-
-    if request.method == 'POST':
-        email = request.form.get('email')
-        username = request.form.get('username') # Get Username
-        password = request.form.get('password')
-        
-        user_service = current_app.services['users']
-        
-        # Call the updated create_user function
-        user, error = user_service.create_user(email, username, password)
-        
-        if error:
-            flash(error, 'error') # Display "Username taken" or "Email exists"
-        else:
-            login_user(user)
-            flash(f'Welcome, {username}!', 'success')
-            logger.info(f'[AUTH] New user registered: {username} ({email})')
             return redirect(url_for('web.gallery'))
+        else:
+            # This handles "Invalid format", "Not found", and "Wrong password"
+            flash(error, 'error') 
             
-    return render_template('auth/signup.html')
+    return render_template('auth/login.html')
 
 @auth_bp.route('/logout')
 @login_required
 def logout():
     logout_user()
+    flash('You have been logged out.', 'success')
     return redirect(url_for('auth.login'))

@@ -14,7 +14,7 @@
           {% endif %}
         {% endwith %}
 
-        <form method="POST" action="{{ url_for('auth.login') }}">
+        <form method="POST" action="{{ url_for('auth.login') }}" novalidate>
             
             <div class="form-group">
                 <label for="email">Email Address</label>
@@ -46,7 +46,6 @@
 </div>
 
 <style>
-    /* Same styles as Signup for consistency */
     .auth-container { display: flex; justify-content: center; align-items: center; min-height: 80vh; padding: 20px; }
     .auth-box { background: #1a1a1a; padding: 2.5rem; border-radius: 16px; width: 100%; max-width: 400px; border: 1px solid #333; }
     .auth-box h2 { color: white; margin-bottom: 0.5rem; text-align: center; }
@@ -55,11 +54,20 @@
     .form-group { margin-bottom: 1.25rem; }
     .form-group label { display: block; color: #ddd; margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 500; }
     
-    .form-group input[type="email"], 
-    .form-group input[type="password"] { 
-        width: 100%; padding: 12px; background: #0f0f0f; border: 1px solid #333; 
-        border-radius: 8px; color: white; outline: none; transition: 0.2s; 
+    /* --- FIXED CSS HERE --- */
+    /* Target all inputs EXCEPT the checkbox */
+    .form-group input:not([type="checkbox"]) { 
+        width: 100%; 
+        padding: 12px; 
+        padding-right: 40px; /* Space for the eye icon */
+        background: #0f0f0f; 
+        border: 1px solid #333; 
+        border-radius: 8px; 
+        color: white; 
+        outline: none; 
+        transition: 0.2s; 
     }
+    
     .form-group input:focus { border-color: #3b82f6; }
     
     /* TOGGLE BUTTON STYLE */
