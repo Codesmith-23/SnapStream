@@ -1,17 +1,14 @@
-import os
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required
-from app.services.mock_impl import MockUsers
+
+# --- THE FIX IS HERE ---
+# 1. Import the service that automatically switches between Mock and AWS
+from app.config_services import users_service
+
+# 2. DELETE the lines that initialized MockUsers manually.
+#    (We do not need os, BASE_DIR, or MOCK_DIR here anymore)
 
 auth_bp = Blueprint('auth', __name__)
-
-# --- INITIALIZE SERVICES ---
-# We must re-initialize the service here so this file can access the database
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MOCK_DIR = os.path.join(BASE_DIR, 'mock_aws')
-
-# Initialize the User Service
-users_service = MockUsers(os.path.join(MOCK_DIR, 'local_db'))
 
 @auth_bp.route('/signup', methods=['GET', 'POST'])
 def signup():

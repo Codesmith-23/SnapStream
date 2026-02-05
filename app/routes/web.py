@@ -3,22 +3,18 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 
-# Import your services
-from app.services.mock_impl import MockUsers, MockStorage, MockDatabase
+# --- THE FIX IS HERE ---
+# 1. We import ALL THREE services from the config file.
+# 2. We do NOT manually initialize MockUsers/MockStorage anymore.
+from app.config_services import users_service, storage_service, db_service
 
 web_bp = Blueprint('web', __name__)
 
-# --- INITIALIZE SERVICES ---
-# We need these variables to be available to all functions below
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MOCK_DIR = os.path.join(BASE_DIR, 'mock_aws')
-
-users_service = MockUsers(os.path.join(MOCK_DIR, 'local_db'))
-storage_service = MockStorage(os.path.join(MOCK_DIR, 'local_s3'))
-db_service = MockDatabase(os.path.join(MOCK_DIR, 'local_db'))
+# (Deleted the lines that were overwriting your services)
 
 @web_bp.route('/')
 def gallery():
+    # Now this uses DynamoDB on EC2 and Local JSON on laptop automatically
     videos = db_service.get_all_videos()
     search_query = request.args.get('search', '').lower()
     
@@ -56,7 +52,7 @@ def upload():
 
     if file:
         filename = secure_filename(file.filename)
-        # Upload Video
+        # Uses S3 on EC2, Local folder on laptop
         saved_filename = storage_service.upload_file(file, filename)
         
         # Handle Thumbnail
