@@ -3,18 +3,23 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 
-# --- THE FIX IS HERE ---
-# 1. We import ALL THREE services from the config file.
-# 2. We do NOT manually initialize MockUsers/MockStorage anymore.
+# Import services from config
 from app.config_services import users_service, storage_service, db_service
 
 web_bp = Blueprint('web', __name__)
 
-# (Deleted the lines that were overwriting your services)
-
 @web_bp.route('/')
+def home():
+    """
+    Landing Page
+    """
+    return render_template('index.html')
+
+@web_bp.route('/explore')
 def gallery():
-    # Now this uses DynamoDB on EC2 and Local JSON on laptop automatically
+    """
+    The Video Feed
+    """
     videos = db_service.get_all_videos()
     search_query = request.args.get('search', '').lower()
     
@@ -23,11 +28,19 @@ def gallery():
     
     return render_template('gallery.html', videos=videos)
 
+# --- FIX: THIS IS NOW ON ITS OWN LINE ---
 @web_bp.route('/watch/<video_id>')
 def watch(video_id):
+    """
+    Video Player Page
+    """
+    # 1. Get all videos (or optimize to get one)
     videos = db_service.get_all_videos()
+    
+    # 2. Find the specific video
     video = next((v for v in videos if v['video_id'] == video_id), None)
     
+    # 3. Handle 'Not Found'
     if not video:
         return render_template('404.html'), 404
     
@@ -76,7 +89,6 @@ def upload():
         flash('Video uploaded successfully!', 'success')
         return redirect(url_for('web.gallery'))
 
-
 @web_bp.route('/admin')
 @login_required
 def admin():
@@ -99,14 +111,23 @@ def settings():
         if action == 'update_profile':
             new_username = request.form.get('username')
             avatar_file = request.files.get('avatar')
+            delete_flag = request.form.get('delete_avatar') # <--- 1. CATCH THE FLAG
             
             avatar_filename = None
-            if avatar_file and avatar_file.filename:
+            
+            # 2. DECIDE WHAT TO DO
+            if delete_flag == '1':
+                # Special Code: Tell the service to DELETE the image
+                avatar_filename = "__DELETE__" 
+            elif avatar_file and avatar_file.filename:
+                # Normal Upload
                 safe_name = secure_filename(avatar_file.filename)
                 unique_name = f"avatar_{current_user.id}_{safe_name}"
                 avatar_filename = storage_service.upload_file(avatar_file, unique_name)
 
+            # 3. CALL SERVICE
             success, msg = users_service.update_profile(current_user.id, new_username, avatar_filename)
+            
             if success:
                 flash(msg, 'success')
             else:

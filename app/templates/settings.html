@@ -8,34 +8,39 @@
     </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
     {% endwith %}
 
     <div class="settings-card">
-        
-        <form action="{{ url_for('web.settings') }}" method="POST" enctype="multipart/form-data" class="settings-form">
+
+        <form action="{{ url_for('web.settings') }}" method="POST" enctype="multipart/form-data" class="settings-form"
+            id="profileForm">
             <input type="hidden" name="action" value="update_profile">
-            
+            <input type="hidden" name="delete_avatar" id="delete_avatar_input" value="0">
+
+            <input type="file" name="avatar" id="avatar_upload_real" accept="image/*" onchange="handleFileSelect(this)"
+                style="display: none;">
+
             <div class="profile-section">
                 <div class="avatar-wrapper">
-                    {% if user.avatar %}
-                        <img src="{{ url_for('stream.stream_file', filename=user.avatar) }}" class="large-avatar-img">
-                    {% else %}
-                        <div class="large-avatar-placeholder">
-                            {{ user.username[0].upper() }}
-                        </div>
-                    {% endif %}
-                    
-                    <label for="avatar_upload" class="avatar-edit-btn">
+
+                    <div class="large-avatar-placeholder {{ 'd-none' if user.avatar else '' }}" id="avatarPlaceholder">
+                        {{ user.username[0].upper() }}
+                    </div>
+
+                    <img src="{{ url_for('stream.stream_file', filename=user.avatar) if user.avatar else '' }}"
+                        class="large-avatar-img {{ '' if user.avatar else 'd-none' }}" id="avatarPreview"
+                        onerror="this.classList.add('d-none'); document.getElementById('avatarPlaceholder').classList.remove('d-none');">
+
+                    <button type="button" class="avatar-trigger-btn" onclick="openModal()">
                         <i class="fa-solid fa-camera"></i>
-                    </label>
-                    <input type="file" name="avatar" id="avatar_upload" accept="image/*" onchange="previewAvatar(this)">
+                    </button>
                 </div>
-                
+
                 <div class="profile-info">
                     <h2>{{ user.username }}</h2>
                     <p>{{ user.email }}</p>
@@ -50,8 +55,8 @@
 
             <div class="form-group">
                 <label>Email Address</label>
-                <input type="email" value="{{ user.email }}" readonly class="form-input readonly">
-                <p class="form-hint">Email cannot be changed.</p>
+                <input type="email" value="{{ user.email }}" readonly class="form-input readonly"
+                    style="cursor: not-allowed; opacity: 0.7;">
             </div>
 
             <button type="submit" class="btn-primary">Save Profile Changes</button>
@@ -62,102 +67,100 @@
         <h3 style="color:white; margin-bottom: 1rem;">Change Password</h3>
         <form action="{{ url_for('web.settings') }}" method="POST" class="settings-form">
             <input type="hidden" name="action" value="change_password">
-
             <div class="form-group">
                 <label>Current Password</label>
-                <input type="password" name="current_password" required class="form-input" placeholder="Enter current password">
+                <input type="password" name="current_password" required class="form-input">
             </div>
-
-            <div class="form-row">
-                <div class="form-group">
+            <div class="d-flex" style="gap: 20px; flex-wrap: wrap;">
+                <div class="form-group" style="flex: 1;">
                     <label>New Password</label>
-                    <input type="password" name="new_password" required class="form-input" placeholder="8+ chars, symbol, number">
+                    <input type="password" name="new_password" required class="form-input">
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="flex: 1;">
                     <label>Confirm New Password</label>
-                    <input type="password" name="confirm_password" required class="form-input" placeholder="Retype new password">
+                    <input type="password" name="confirm_password" required class="form-input">
                 </div>
             </div>
-
             <button type="submit" class="btn-secondary">Update Password</button>
         </form>
+    </div>
+</div>
 
+<div class="modal-overlay" id="avatarModal" onclick="closeModalOnClickOutside(event)">
+    <div class="modal-box">
+        <div class="modal-header">Change Profile Photo</div>
+        <div class="modal-options">
+            <button class="modal-btn upload" onclick="triggerFileInput()">
+                <i class="fa-solid fa-cloud-arrow-up"></i> Upload New Photo
+            </button>
+
+            {% if user.avatar %}
+            <button class="modal-btn remove" onclick="confirmRemove()">
+                <i class="fa-solid fa-trash"></i> Remove Current Photo
+            </button>
+            {% else %}
+            <button class="modal-btn remove disabled" disabled>
+                <i class="fa-solid fa-trash"></i> Remove Current Photo
+            </button>
+            {% endif %}
+
+            <button class="modal-btn cancel" onclick="closeModal()">Cancel</button>
+        </div>
     </div>
 </div>
 
 <script>
-    function previewAvatar(input) {
+    const modal = document.getElementById('avatarModal');
+    const fileInput = document.getElementById('avatar_upload_real');
+    const form = document.getElementById('profileForm');
+    const deleteInput = document.getElementById('delete_avatar_input');
+
+    // --- MODAL FUNCTIONS ---
+    function openModal() { modal.classList.add('active'); }
+    function closeModal() { modal.classList.remove('active'); }
+    function closeModalOnClickOutside(event) { if (event.target === modal) closeModal(); }
+
+    function triggerFileInput() {
+        closeModal();
+        fileInput.click();
+    }
+
+    // --- INSTANT PREVIEW LOGIC ---
+    function handleFileSelect(input) {
         if (input.files && input.files[0]) {
-            // Just a visual indicator that a file was selected
-            const btn = document.querySelector('.avatar-edit-btn');
-            btn.style.background = '#10b981'; // Green
-            btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+            const file = input.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                // 1. Hide Placeholder using Class
+                const placeholder = document.getElementById('avatarPlaceholder');
+                if (placeholder) placeholder.classList.add('d-none');
+
+                // 2. Show Image using Class & Update Source
+                const img = document.getElementById('avatarPreview');
+                img.src = e.target.result;
+                img.classList.remove('d-none');
+            }
+
+            reader.readAsDataURL(file);
+
+            // Reset delete flag (user changed mind and is uploading instead)
+            if (deleteInput) deleteInput.value = '0';
+
+            // Visual Cue
+            const saveBtn = form.querySelector('.btn-primary');
+            saveBtn.innerText = "Save New Picture";
+            saveBtn.style.background = '#10b981';
+        }
+    }
+
+    function confirmRemove() {
+        if (confirm("Remove profile picture?")) {
+            closeModal();
+            deleteInput.value = '1';
+            fileInput.value = ''; // clear any selected file
+            form.submit();
         }
     }
 </script>
-
-<style>
-    .settings-container { max-width: 800px; margin: 0 auto; padding: 2rem; }
-    .settings-header { margin-bottom: 2rem; }
-    .settings-header h1 { font-size: 1.8rem; margin-bottom: 0.5rem; color: white; }
-    .settings-header p { color: #aaa; }
-
-    .settings-card { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 2rem; }
-
-    .profile-section { display: flex; align-items: center; gap: 24px; margin-bottom: 2rem; }
-    
-    .avatar-wrapper { position: relative; width: 80px; height: 80px; }
-    
-    .large-avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #3b82f6; }
-    
-    .large-avatar-placeholder {
-        width: 100%; height: 100%; border-radius: 50%; 
-        background: #3b82f6; color: white; font-size: 2rem; font-weight: 700;
-        display: flex; align-items: center; justify-content: center;
-    }
-
-    .avatar-edit-btn {
-        position: absolute; bottom: 0; right: 0;
-        width: 28px; height: 28px; background: #333; color: white;
-        border-radius: 50%; display: flex; align-items: center; justify-content: center;
-        border: 1px solid #555; cursor: pointer; transition: 0.2s;
-    }
-    .avatar-edit-btn:hover { background: #555; }
-    #avatar_upload { display: none; }
-
-    .profile-info h2 { margin: 0 0 4px 0; color: white; }
-    .profile-info p { color: #aaa; margin: 0; }
-
-    .divider { border: 0; border-top: 1px solid #333; margin: 2rem 0; }
-
-    .form-group { margin-bottom: 1.5rem; flex: 1; }
-    .form-row { display: flex; gap: 20px; }
-    
-    .form-group label { display: block; color: #ddd; margin-bottom: 0.5rem; font-weight: 500; }
-    
-    .form-input { 
-        width: 100%; padding: 12px; background: #0f0f0f; border: 1px solid #333; 
-        border-radius: 8px; color: white; outline: none; font-size: 1rem;
-    }
-    .form-input:focus { border-color: #3b82f6; }
-    .form-input.readonly { color: #777; cursor: not-allowed; background: #151515; }
-    
-    .form-hint { font-size: 0.8rem; color: #666; margin-top: 6px; }
-
-    .btn-primary {
-        padding: 12px 24px; background: #3b82f6; color: white; border: none;
-        border-radius: 8px; cursor: pointer; font-weight: 600;
-    }
-    .btn-primary:hover { background: #2563eb; }
-
-    .btn-secondary {
-        padding: 12px 24px; background: transparent; border: 1px solid #555; 
-        color: white; border-radius: 8px; cursor: pointer; font-weight: 600;
-    }
-    .btn-secondary:hover { border-color: #888; background: #222; }
-
-    .alert { padding: 10px; border-radius: 6px; margin-bottom: 1rem; font-size: 0.9rem; }
-    .alert-success { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid #10b981; }
-    .alert-error { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; }
-</style>
 {% endblock %}

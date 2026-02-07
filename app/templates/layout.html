@@ -1,243 +1,121 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SnapStream</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
-    
-    <style>
-        :root {
-            /* --- CONTRASTING VIBRANCY THEME --- */
-            --bg-body: #181818;       
-            --bg-card: #202020;       
-            --bg-nav:  #181818;       
-            
-            --primary-orange: #FF5722; 
-            --accent-purple: #673AB7;  
-            --hover-yellow:  #FFEB3B;  
-            
-            --text-main: #F7F7F7;     
-            --text-muted: #B0B0B0;    
-            
-            --border: #333333;        
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; }
-        
-        body { 
-            background-color: var(--bg-body); 
-            color: var(--text-main); 
-            min-height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            overflow-y: auto; 
-        }
-
-        /* --- NAVBAR --- */
-        .header {
-            height: 70px; 
-            background: var(--bg-nav); 
-            border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; justify-content: space-between; 
-            padding: 0 24px; flex-shrink: 0;
-            position: sticky; top: 0; z-index: 1000;
-        }
-
-        .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-        
-        .logo-icon-box {
-            width: 40px; height: 40px; 
-            background: linear-gradient(135deg, var(--primary-orange), var(--accent-purple));
-            border-radius: 8px; 
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 10px rgba(255, 87, 34, 0.4);
-        }
-        .logo-icon-box i { color: white; font-size: 1.2rem; }
-
-        .logo-text {
-            font-family: 'Montserrat', sans-serif; 
-            font-size: 1.5rem; font-weight: 800; color: white; letter-spacing: -0.5px;
-        }
-
-        .header-actions { display: flex; align-items: center; gap: 16px; }
-
-        .btn-upload {
-            background: var(--primary-orange);
-            color: white; border: none; padding: 10px 24px;
-            border-radius: 4px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px;
-            text-decoration: none; font-size: 0.9rem; transition: 0.2s;
-            text-transform: uppercase; letter-spacing: 0.5px;
-        }
-        .btn-upload:hover { 
-            background: #F4511E; 
-            box-shadow: 0 0 15px rgba(255, 87, 34, 0.6); 
-            transform: translateY(-1px);
-        }
-
-        .user-avatar {
-            width: 40px; height: 40px; 
-            border-radius: 50%; 
-            background: var(--bg-card); 
-            border: 2px solid var(--primary-orange); 
-            color: var(--text-main); 
-            display: flex; align-items: center; justify-content: center; 
-            font-weight: 700; cursor: pointer; text-decoration: none; transition: 0.2s;
-            overflow: hidden; padding: 0;
-        }
-        .user-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .user-avatar:hover { border-color: var(--hover-yellow); }
-
-        /* --- SIDEBAR --- */
-        .main-wrapper { display: flex; flex: 1; overflow: hidden; }
-
-        .sidebar {
-            width: 260px; border-right: 1px solid var(--border); background: var(--bg-nav);
-            display: flex; flex-direction: column; padding: 24px 16px; flex-shrink: 0;
-            position: sticky; top: 70px; height: calc(100vh - 70px);
-        }
-
-        .nav-item {
-            display: flex; align-items: center; gap: 16px; padding: 14px 20px;
-            color: var(--text-muted); text-decoration: none; font-weight: 500; 
-            transition: 0.2s; border-radius: 8px; margin-bottom: 4px;
-        }
-        .nav-item:hover { 
-            background: rgba(255, 235, 59, 0.05); 
-            color: var(--hover-yellow); 
-        }
-        .nav-item:hover i { color: var(--hover-yellow); }
-
-        .nav-item.active { 
-            background: var(--accent-purple); color: white;
-            box-shadow: 0 4px 12px rgba(103, 58, 183, 0.4); 
-        }
-        .nav-item i { width: 24px; text-align: center; font-size: 1.1rem; transition: 0.2s; }
-
-        .sidebar-footer { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border); }
-        
-        .user-profile { 
-            display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; 
-            padding: 10px; border-radius: 8px; transition: 0.2s; max-width: 100%;
-        }
-        .user-profile:hover { background: var(--bg-card); }
-        .user-profile:hover .user-name { color: var(--hover-yellow); }
-        
-        .user-info { overflow: hidden; display: flex; flex-direction: column; }
-        .user-name { font-size: 0.95rem; font-weight: 600; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
-        .user-email { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
-        
-        /* GUEST CTA IN SIDEBAR */
-        .guest-cta {
-            padding: 1.5rem 1rem; text-align: center;
-            background: rgba(255, 255, 255, 0.05); border-radius: 8px;
-            margin-top: auto;
-        }
-        .guest-cta p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; }
-        .btn-small { 
-            display: inline-block; padding: 8px 16px; background: transparent; 
-            border: 1px solid var(--primary-orange); color: var(--primary-orange);
-            text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 0.8rem;
-            transition: 0.2s;
-        }
-        .btn-small:hover { background: var(--primary-orange); color: white; }
-
-        /* CONTENT AREA */
-        .content { flex: 1; overflow-y: auto; position: relative; background: var(--bg-body); }
-        
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: var(--bg-body); }
-        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--primary-orange); }
-
-        @media (max-width: 768px) {
-            .sidebar { display: none; }
-        }
-    </style>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Montserrat:wght@700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
 
     <header class="header">
-        <a href="{{ url_for('web.gallery') }}" class="logo">
-            <div class="logo-icon-box">
-                <i class="fa-solid fa-bolt"></i>
-            </div>
-            <span class="logo-text">SnapStream</span>
-        </a>
-        
+        <div class="d-flex align-center">
+            <!-- Hamburger Menu (Mobile) -->
+            <button class="menu-toggle" onclick="toggleSidebar()">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+
+            <a href="{{ url_for('web.gallery') }}" class="logo">
+                <div class="logo-icon-box"
+                    style="width: 40px; height: 40px; position: relative; display: flex; align-items: center; justify-content: center; background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.3) 100%); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; backdrop-filter: blur(4px);">
+                    <i class="fa-solid fa-play"
+                        style="font-size: 1.5rem; background: linear-gradient(135deg, #6200EA 0%, #D500F9 50%, #FFAB00 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+                </div>
+                <span class="logo-text">SnapStream</span>
+            </a>
+        </div>
+
         <div class="header-actions">
             {% if current_user.is_authenticated %}
-                <a href="{{ url_for('web.upload_page') }}" class="btn-upload">
-                    <i class="fa-solid fa-plus"></i> Upload
-                </a>
-                
-                <a href="{{ url_for('web.settings') }}" class="user-avatar">
-                    {% if current_user.avatar %}
-                        <img src="{{ url_for('stream.stream_file', filename=current_user.avatar) }}">
-                    {% else %}
-                        {{ current_user.username[0].upper() }}
-                    {% endif %}
-                </a>
-                
-                <a href="{{ url_for('auth.logout') }}" style="color: #ef4444; margin-left: 10px; font-size: 1.2rem; transition:0.2s;">
-                    <i class="fa-solid fa-power-off"></i>
-                </a>
+            <a href="{{ url_for('web.upload_page') }}" class="btn-upload" title="Upload Video">
+                <i class="fa-solid fa-plus"></i> <span class="hide-mobile">Create</span>
+            </a>
+
+            <a href="{{ url_for('web.settings') }}" class="user-avatar-nav" title="Profile">
+                <!-- Fallback Placeholder -->
+                <div id="navAvatarPlaceholder" class="{{ 'd-none' if current_user.avatar else '' }}"
+                    style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: var(--bg-card); color: var(--text-main);">
+                    {{ current_user.username[0].upper() }}
+                </div>
+
+                <!-- Actual Image -->
+                <img src="{{ url_for('stream.stream_file', filename=current_user.avatar) if current_user.avatar else '' }}"
+                    class="{{ '' if current_user.avatar else 'd-none' }}"
+                    style="width: 100%; height: 100%; object-fit: cover;"
+                    onerror="this.classList.add('d-none'); document.getElementById('navAvatarPlaceholder').classList.remove('d-none');">
+            </a>
+
+            <a href="{{ url_for('auth.logout') }}" style="color: #ef4444; font-size: 1.2rem; transition:0.2s;"
+                title="Logout">
+                <i class="fa-solid fa-power-off"></i>
+            </a>
             {% else %}
-                <a href="{{ url_for('auth.login') }}" style="color: var(--text-main); text-decoration: none; font-weight: 600; margin-right: 15px;">Login</a>
-                <a href="{{ url_for('auth.signup') }}" class="btn-upload">Get Started</a>
+            <a href="{{ url_for('auth.login') }}"
+                style="color: var(--text-main); text-decoration: none; font-weight: 600;">Login</a>
+            <a href="{{ url_for('auth.signup') }}" class="btn-upload">Get Started</a>
             {% endif %}
         </div>
     </header>
 
     <div class="main-wrapper">
-        
-        <aside class="sidebar">
-            <a href="{{ url_for('web.gallery') }}" class="nav-item {{ 'active' if request.endpoint == 'web.gallery' }}">
+        <aside class="sidebar" id="sidebar">
+            <a href="{{ url_for('web.home') }}" class="nav-item {{ 'active' if request.endpoint == 'web.home' }}">
                 <i class="fa-solid fa-house"></i> <span>Home</span>
             </a>
-            <a href="#" class="nav-item">
+            <a href="{{ url_for('web.gallery') }}" class="nav-item {{ 'active' if request.endpoint == 'web.gallery' }}">
                 <i class="fa-solid fa-hashtag"></i> <span>Explore</span>
             </a>
 
             {% if current_user.is_authenticated %}
-                <a href="#" class="nav-item">
-                    <i class="fa-solid fa-clock-rotate-left"></i> <span>History</span>
-                </a>
-                
-                <div style="margin-top: 2rem; padding: 0 20px; color: var(--primary-orange); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">
-                    Library
-                </div>
-                
-                <a href="{{ url_for('web.admin') }}" class="nav-item {{ 'active' if request.endpoint == 'web.admin' }}">
-                    <i class="fa-solid fa-layer-group"></i> <span>My Studio</span>
-                </a>
-                <a href="{{ url_for('web.settings') }}" class="nav-item {{ 'active' if request.endpoint == 'web.settings' }}">
-                    <i class="fa-solid fa-sliders"></i> <span>Settings</span>
-                </a>
-                
-                <div class="sidebar-footer">
-                    <a href="{{ url_for('web.settings') }}" class="user-profile">
-                        <div class="user-avatar" style="width: 36px; height: 36px; font-size: 0.8rem; border: none;">
-                            {% if current_user.avatar %}
-                                <img src="{{ url_for('stream.stream_file', filename=current_user.avatar) }}">
-                            {% else %}
-                                {{ current_user.username[0].upper() }}
-                            {% endif %}
+            <a href="#" class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i> <span>History</span></a>
+
+            <div
+                style="margin-top: 2rem; padding: 0 20px; color: var(--primary); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">
+                Library</div>
+
+            <a href="{{ url_for('web.admin') }}" class="nav-item {{ 'active' if request.endpoint == 'web.admin' }}"><i
+                    class="fa-solid fa-layer-group"></i> <span>My Studio</span></a>
+            <a href="{{ url_for('web.settings') }}"
+                class="nav-item {{ 'active' if request.endpoint == 'web.settings' }}"><i
+                    class="fa-solid fa-sliders"></i> <span>Settings</span></a>
+
+            <div class="sidebar-footer">
+                <a href="{{ url_for('web.settings') }}" class="user-profile-link">
+                    <div class="user-avatar-nav" style="width: 36px; height: 36px; font-size: 0.8rem; border: none;">
+                        <div id="sidebarAvatarPlaceholder" class="{{ 'd-none' if current_user.avatar else '' }}"
+                            style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: var(--bg-card); color: var(--text-main);">
+                            {{ current_user.username[0].upper() }}
                         </div>
-                        <div class="user-info">
-                            <div class="user-name">{{ current_user.username }}</div>
-                            <div class="user-email">{{ current_user.email }}</div>
-                        </div>
-                    </a>
-                </div>
+
+                        <img src="{{ url_for('stream.stream_file', filename=current_user.avatar) if current_user.avatar else '' }}"
+                            class="{{ '' if current_user.avatar else 'd-none' }}"
+                            style="width: 100%; height: 100%; object-fit: cover;"
+                            onerror="this.classList.add('d-none'); document.getElementById('sidebarAvatarPlaceholder').classList.remove('d-none');">
+                    </div>
+
+                    <div class="user-info">
+                        <div class="user-name">{{ current_user.username }}</div>
+                        <div class="user-email">{{ current_user.email }}</div>
+                    </div>
+                </a>
+            </div>
             {% else %}
-                <div class="guest-cta">
-                    <p>Sign in to like videos, comment, and subscribe.</p>
-                    <a href="{{ url_for('auth.login') }}" class="btn-small">Sign In</a>
-                </div>
+            <div class="sidebar-footer">
+                <div style="font-size: 0.7rem; color: var(--text-muted); line-height: 1.5;">SnapStream v1.0.5 <span
+                        style="opacity:0.5">(Beta)</span><br>&copy; 2026 Inc.</div>
+            </div>
             {% endif %}
         </aside>
+
+        <!-- Overlay for Mobile Sidebar -->
+        <div class="modal-overlay" id="sidebarOverlay" onclick="toggleSidebar()"
+            style="z-index: 899; backdrop-filter: none;"></div>
 
         <main class="content">
             {% block content %}{% endblock %}
@@ -245,6 +123,20 @@
     </div>
 
     <script>
+        // Sidebar Toggle for Mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('active');
+
+            if (sidebar.classList.contains('active')) {
+                overlay.style.display = 'block';
+            } else {
+                overlay.style.display = 'none';
+            }
+        }
+
+        // Auto-dismiss Alerts
         setTimeout(() => {
             const alerts = document.querySelectorAll('.alert');
             alerts.forEach(alert => {
@@ -254,4 +146,5 @@
         }, 3000);
     </script>
 </body>
+
 </html>

@@ -3,157 +3,98 @@
 {% block content %}
 <div style="max-width: 1200px; margin: 0 auto; padding: 4rem 2rem;">
 
-    <!-- Hero Section -->
-    <div style="text-align: center; margin-bottom: 4rem;">
-        <h1 style="font-size: 3rem; font-weight: 700; margin-bottom: 1rem; background: linear-gradient(135deg, #fff 0%, #a3a3a3 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-            SnapStream
-        </h1>
-        <p style="font-size: 1.2rem; color: var(--text-muted); margin-bottom: 2rem;">
-            Cloud-Native Media Upload & Analysis Platform
-        </p>
-        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-            <a href="{{ url_for('web.gallery') }}" class="btn-primary" style="padding: 12px 32px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-play"></i> Browse Gallery
-            </a>
-            <a href="{{ url_for('web.upload_page') }}" class="btn-primary" style="padding: 12px 32px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-arrow-up"></i> Upload Video
-            </a>
-        </div>
-    </div>
-
-    <!-- Features Section -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-bottom: 4rem;">
-
-        <!-- Feature 1 -->
-        <div class="studio-card" style="padding: 2rem;">
-            <div style="font-size: 2.5rem; margin-bottom: 1rem;">
-                <i class="fa-solid fa-cloud-arrow-up" style="background: linear-gradient(135deg, var(--primary), #2563eb); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
-            </div>
-            <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem;">Smart Upload</h3>
-            <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6;">
-                Drag and drop your videos with custom thumbnails. Automatic frame capture makes thumbnail creation effortless.
-            </p>
-        </div>
-
-        <!-- Feature 2 -->
-        <div class="studio-card" style="padding: 2rem;">
-            <div style="font-size: 2.5rem; margin-bottom: 1rem;">
-                <i class="fa-solid fa-brain" style="background: linear-gradient(135deg, var(--primary), #2563eb); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
-            </div>
-            <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem;">AI-Powered Tags</h3>
-            <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6;">
-                Automatic content analysis with AWS Rekognition. Videos are tagged instantly with accurate, searchable labels.
-            </p>
-        </div>
-
-        <!-- Feature 3 -->
-        <div class="studio-card" style="padding: 2rem;">
-            <div style="font-size: 2.5rem; margin-bottom: 1rem;">
-                <i class="fa-solid fa-magnifying-glass" style="background: linear-gradient(135deg, var(--primary), #2563eb); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
-            </div>
-            <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem;">Smart Discovery</h3>
-            <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6;">
-                Search and discover videos by AI-generated tags. Netflix-style gallery with cinema modal playback.
-            </p>
-        </div>
-
-        <!-- Feature 4 -->
-        <div class="studio-card" style="padding: 2rem;">
-            <div style="font-size: 2.5rem; margin-bottom: 1rem;">
-                <i class="fa-solid fa-server" style="background: linear-gradient(135deg, var(--primary), #2563eb); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
-            </div>
-            <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem;">Cloud-Native</h3>
-            <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6;">
-                Built for AWS. S3 storage, DynamoDB metadata, Rekognition AI. Seamless local development to cloud production.
-            </p>
-        </div>
-
-        <!-- Feature 5 -->
-        <div class="studio-card" style="padding: 2rem;">
-            <div style="font-size: 2.5rem; margin-bottom: 1rem;">
-                <i class="fa-solid fa-heart" style="background: linear-gradient(135deg, var(--primary), #2563eb); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
-            </div>
-            <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem;">Engagement Tracking</h3>
-            <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6;">
-                Like videos, track views, and manage your content. Admin dashboard for platform statistics and control.
-            </p>
-        </div>
-
-        <!-- Feature 6 -->
-        <div class="studio-card" style="padding: 2rem;">
-            <div style="font-size: 2.5rem; margin-bottom: 1rem;">
-                <i class="fa-solid fa-lock" style="background: linear-gradient(135deg, var(--primary), #2563eb); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
-            </div>
-            <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem;">Enterprise Ready</h3>
-            <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6;">
-                Production-grade error handling, structured logging, and service layer architecture. Ready to scale.
-            </p>
-        </div>
-
-    </div>
-
-    <!-- Tech Stack Section -->
-    <div class="studio-card" style="padding: 3rem; text-align: center;">
-        <h2 style="font-size: 1.8rem; font-weight: 700; margin-bottom: 2rem;">Built With</h2>
+    <div style="text-align: center; margin-bottom: 5rem; padding: 2rem 0; position: relative;">
         
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 2rem;">
-            <div>
-                <div style="font-size: 2rem; margin-bottom: 0.5rem;">
-                    <i class="fa-solid fa-flask-vial" style="color: var(--primary);"></i>
-                </div>
-                <div style="font-weight: 600;">Flask</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">Backend Framework</div>
-            </div>
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60%; height: 60%; background: radial-gradient(circle, rgba(103, 58, 183, 0.15) 0%, rgba(0,0,0,0) 70%); z-index: -1; filter: blur(40px);"></div>
 
-            <div>
-                <div style="font-size: 2rem; margin-bottom: 0.5rem;">
-                    <i class="fa-brands fa-aws" style="color: #FF9900;"></i>
-                </div>
-                <div style="font-weight: 600;">AWS</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">Cloud Platform</div>
-            </div>
+        <h1 style="font-size: 3.5rem; font-weight: 800; margin-bottom: 1rem; letter-spacing: -1px; line-height: 1.2;">
+            <span style="background: linear-gradient(135deg, #fff 30%, #a3a3a3 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                SnapStream
+            </span>
+        </h1>
+        
+        <p style="font-size: 1.25rem; color: var(--text-muted); margin-bottom: 2.5rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+            The Cloud-Native Media Platform. <br> Upload, analyze, and stream with AI-powered precision.
+        </p>
+        
+        <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+            
+            <a href="{{ url_for('web.gallery') }}" 
+               style="
+                padding: 14px 32px; 
+                text-decoration: none; 
+                color: #fff; 
+                font-weight: 600;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 50px;
+                display: inline-flex; align-items: center; gap: 10px;
+                transition: all 0.3s ease;
+                backdrop-filter: blur(10px);
+               "
+               onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'; this.style.transform='translateY(-3px)'; this.style.boxShadow='0 10px 20px rgba(0,0,0,0.2)';"
+               onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                <i class="fa-solid fa-layer-group" style="color: #a3a3a3;"></i> 
+                Browse Gallery
+            </a>
 
-            <div>
-                <div style="font-size: 2rem; margin-bottom: 0.5rem;">
-                    <i class="fa-solid fa-database" style="color: #FF6B35;"></i>
-                </div>
-                <div style="font-weight: 600;">DynamoDB</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">NoSQL Database</div>
-            </div>
+            <a href="{{ url_for('web.upload_page') }}" 
+               style="
+                padding: 14px 36px; 
+                text-decoration: none; 
+                color: #fff; 
+                font-weight: 700;
+                background: linear-gradient(135deg, #FF5722 0%, #673AB7 100%);
+                border: none;
+                border-radius: 50px;
+                display: inline-flex; align-items: center; gap: 10px;
+                transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                box-shadow: 0 4px 15px rgba(255, 87, 34, 0.4);
+               "
+               onmouseover="this.style.transform='translateY(-3px) scale(1.02)'; this.style.boxShadow='0 15px 30px rgba(103, 58, 183, 0.5)';"
+               onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 4px 15px rgba(255, 87, 34, 0.4)';">
+                <span>Upload Video</span>
+                <i class="fa-solid fa-arrow-up-from-bracket"></i>
+            </a>
 
-            <div>
-                <div style="font-size: 2rem; margin-bottom: 0.5rem;">
-                    <i class="fa-solid fa-cube" style="color: #34A853;"></i>
-                </div>
-                <div style="font-weight: 600;">S3</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">Object Storage</div>
-            </div>
-
-            <div>
-                <div style="font-size: 2rem; margin-bottom: 0.5rem;">
-                    <i class="fa-solid fa-brain" style="color: #FF6B6B;"></i>
-                </div>
-                <div style="font-weight: 600;">Rekognition</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">AI Analysis</div>
-            </div>
-
-            <div>
-                <div style="font-size: 2rem; margin-bottom: 0.5rem;">
-                    <i class="fa-brands fa-html5" style="color: #E34C26;"></i>
-                </div>
-                <div style="font-weight: 600;">HTML5</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">Modern Web</div>
-            </div>
         </div>
     </div>
 
-    <!-- CTA Section -->
-    <div style="text-align: center; margin-top: 4rem; padding: 3rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 16px; backdrop-filter: blur(10px);">
-        <h2 style="font-size: 1.8rem; font-weight: 700; margin-bottom: 1rem;">Ready to Get Started?</h2>
-        <p style="color: var(--text-muted); margin-bottom: 2rem; font-size: 1.05rem;">Upload your first video and experience AI-powered media discovery.</p>
-        <a href="{{ url_for('web.upload_page') }}" class="btn-primary" style="padding: 14px 36px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-size: 1rem;">
-            <i class="fa-solid fa-arrow-up"></i> Start Uploading
-        </a>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 5rem;">
+
+        <div style="background: var(--bg-card); padding: 30px; border-radius: 20px; border: 1px solid var(--border); transition: 0.3s;" onmouseover="this.style.borderColor='var(--primary-orange)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="width: 50px; height: 50px; background: rgba(255, 87, 34, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+                <i class="fa-solid fa-cloud-arrow-up" style="color: var(--primary-orange); font-size: 1.5rem;"></i>
+            </div>
+            <h3 style="margin-bottom: 10px; font-size: 1.2rem;">Smart Upload</h3>
+            <p style="color: var(--text-muted); line-height: 1.6;">Drag and drop videos. We handle the compression, thumbnails, and storage automatically.</p>
+        </div>
+
+        <div style="background: var(--bg-card); padding: 30px; border-radius: 20px; border: 1px solid var(--border); transition: 0.3s;" onmouseover="this.style.borderColor='var(--accent-purple)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="width: 50px; height: 50px; background: rgba(103, 58, 183, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+                <i class="fa-solid fa-brain" style="color: var(--accent-purple); font-size: 1.5rem;"></i>
+            </div>
+            <h3 style="margin-bottom: 10px; font-size: 1.2rem;">AI Recognition</h3>
+            <p style="color: var(--text-muted); line-height: 1.6;">Powered by AWS Rekognition. We detect objects and scenes to auto-tag your content.</p>
+        </div>
+
+        <div style="background: var(--bg-card); padding: 30px; border-radius: 20px; border: 1px solid var(--border); transition: 0.3s;" onmouseover="this.style.borderColor='#2196F3'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="width: 50px; height: 50px; background: rgba(33, 150, 243, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+                <i class="fa-solid fa-film" style="color: #2196F3; font-size: 1.5rem;"></i>
+            </div>
+            <h3 style="margin-bottom: 10px; font-size: 1.2rem;">Cinema Mode</h3>
+            <p style="color: var(--text-muted); line-height: 1.6;">Immersive playback with a Netflix-style interface for the best viewing experience.</p>
+        </div>
+    </div>
+
+    <div style="text-align: center; border-top: 1px solid var(--border); padding-top: 3rem;">
+        <h4 style="color: var(--text-muted); margin-bottom: 2rem; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; font-size: 0.9rem;">Powered By</h4>
+        <div style="display: flex; gap: 40px; justify-content: center; opacity: 0.6; flex-wrap: wrap;">
+            <i class="fa-brands fa-aws fa-2x" title="AWS Cloud"></i>
+            <i class="fa-brands fa-python fa-2x" title="Python Flask"></i>
+            <i class="fa-solid fa-database fa-2x" title="DynamoDB"></i>
+            <i class="fa-solid fa-robot fa-2x" title="AI Rekognition"></i>
+        </div>
     </div>
 
 </div>
