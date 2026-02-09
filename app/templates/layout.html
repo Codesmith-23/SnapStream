@@ -33,7 +33,7 @@
 
         <div class="header-actions">
             {% if current_user.is_authenticated %}
-            <a href="{{ url_for('web.upload_page') }}" class="btn-upload" title="Upload Video">
+            <a href="{{ url_for('stream.upload') }}" class="btn-upload" title="Upload Video">
                 <i class="fa-solid fa-plus"></i> <span class="hide-mobile">Create</span>
             </a>
 

@@ -4,14 +4,14 @@ import os
 from datetime import datetime
 from botocore.exceptions import ClientError
 from werkzeug.security import generate_password_hash, check_password_hash
-from app.services.base import StorageService, VideoDBService, UsersService
+from app.services.base import StorageService, VideoDBService, UsersService, NotificationService, AnalyzerService
 from app.models import User
+from config import Config  # <--- NEW IMPORT
 
 # --- 1. S3 STORAGE ---
 class S3Storage(StorageService):
     def __init__(self):
-        # Safe defaults or Environment Variables
-        self.bucket = os.environ.get('AWS_BUCKET_NAME', 'my-snapstream-bucket')
+        self.bucket = os.environ.get('AWS_BUCKET_NAME')
         self.region = os.environ.get('AWS_REGION', 'us-east-1')
         self.s3_client = boto3.client('s3', region_name=self.region)
         print(f"[INFO] S3Storage initialized: bucket={self.bucket}")
@@ -33,7 +33,7 @@ class S3Storage(StorageService):
 # --- 2. DYNAMO VIDEO DB ---
 class DynamoDBService(VideoDBService):
     def __init__(self):
-        table_name = os.environ.get('DYNAMO_TABLE_VIDEO', 'SnapStream-Metadata')
+        table_name = os.environ.get('DYNAMO_TABLE_VIDEO')
         region = os.environ.get('AWS_REGION', 'us-east-1')
         self.dynamodb = boto3.resource('dynamodb', region_name=region)
         self.table = self.dynamodb.Table(table_name)
@@ -48,7 +48,6 @@ class DynamoDBService(VideoDBService):
             else:
                 tag_list = tags if isinstance(tags, list) else []
             
-            # Dynamic Date
             upload_date = datetime.now().strftime("%Y-%m-%d")
 
             item = {
@@ -60,8 +59,8 @@ class DynamoDBService(VideoDBService):
                 'filename': filename,
                 'thumbnail': thumbnail_filename,
                 'upload_date': upload_date,
-                'views': 0, # Safe default
-                'likes': 0  # Safe default
+                'views': 0,
+                'likes': 0
             }
             self.table.put_item(Item=item)
             return video_id
@@ -73,7 +72,6 @@ class DynamoDBService(VideoDBService):
         try:
             response = self.table.scan()
             items = response.get('Items', [])
-            # Sort by upload_date (Newest first)
             items.sort(key=lambda x: x.get('upload_date', ''), reverse=True)
             return items
         except ClientError as e:
@@ -81,11 +79,10 @@ class DynamoDBService(VideoDBService):
             return []
 
     def get_video(self, video_id):
-        # Note: Changed from get_video_by_id to get_video to match base class
         try:
             response = self.table.get_item(Key={'video_id': video_id})
             return response.get('Item')
-        except ClientError as e:
+        except ClientError:
             return None
             
     def get_user_videos(self, user_id):
@@ -93,13 +90,13 @@ class DynamoDBService(VideoDBService):
         try:
             response = self.table.scan(FilterExpression=Attr('user_id').eq(user_id))
             return response.get('Items', [])
-        except ClientError as e:
+        except ClientError:
             return []
 
 # --- 3. DYNAMO USERS ---
 class DynamoUsers(UsersService):
     def __init__(self):
-        table_name = os.environ.get('DYNAMO_TABLE_USER', 'SnapStream-Users')
+        table_name = os.environ.get('DYNAMO_TABLE_USER')
         region = os.environ.get('AWS_REGION', 'us-east-1')
         self.dynamodb = boto3.resource('dynamodb', region_name=region)
         self.table = self.dynamodb.Table(table_name)
@@ -122,7 +119,6 @@ class DynamoUsers(UsersService):
 
         try:
             self.table.put_item(Item=item)
-            # FIXED: Order of arguments matches User class
             return User(user_id, username, email, password_hash), None
         except ClientError as e:
             print(f"[ERROR] Create user failed: {e}")
@@ -134,7 +130,6 @@ class DynamoUsers(UsersService):
             return None, "Email not found."
 
         if check_password_hash(user_data['password_hash'], password):
-            # FIXED: Order of arguments matches User class
             return User(
                 user_data['user_id'], 
                 user_data['username'],
@@ -200,3 +195,56 @@ class DynamoUsers(UsersService):
             return True, "Password updated"
         except ClientError as e:
             return False, str(e)
+
+# --- 4. SNS NOTIFIER (NEW) ---
+class SNSNotifier(NotificationService):
+    def __init__(self):
+        self.sns = boto3.client('sns', region_name=os.environ.get('AWS_REGION', 'us-east-1'))
+        # Get ARN from Config
+        self.topic_arn = getattr(Config, 'SNS_TOPIC_ARN', None)
+        print(f"[INFO] SNSNotifier initialized for Topic: {self.topic_arn}")
+
+    def send_notification(self, subject, message):
+        if not self.topic_arn:
+            print("[WARN] No SNS_TOPIC_ARN set. Skipping notification.")
+            return
+
+        try:
+            self.sns.publish(
+                TopicArn=self.topic_arn,
+                Subject=subject,
+                Message=message
+            )
+            print(f"[INFO] SNS Notification sent: {subject}")
+        except ClientError as e:
+            print(f"[ERROR] Failed to send SNS: {e}")
+
+# --- 5. REKOGNITION ANALYZER (NEW) ---
+class RekognitionAnalyzer(AnalyzerService):
+    def __init__(self):
+        self.region = os.environ.get('AWS_REGION', 'us-east-1')
+        self.client = boto3.client('rekognition', region_name=self.region)
+        print(f"[INFO] Rekognition Connected in {self.region}")
+
+    def detect_labels(self, bucket, filename, max_labels=5):
+        try:
+            # Use Config for confidence level
+            min_confidence = getattr(Config, 'REKOGNITION_MIN_CONFIDENCE', 75)
+            
+            response = self.client.detect_labels(
+                Image={
+                    'S3Object': {
+                        'Bucket': bucket,
+                        'Name': filename
+                    }
+                },
+                MaxLabels=max_labels,
+                MinConfidence=min_confidence
+            )
+            
+            tags = [label['Name'] for label in response['Labels']]
+            return tags
+            
+        except ClientError as e:
+            print(f"[ERROR] Rekognition Failed: {e}")
+            return []

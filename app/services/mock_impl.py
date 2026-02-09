@@ -2,32 +2,37 @@ import json
 import os
 import uuid
 import re
+import random
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
+from app.services.base import StorageService, VideoDBService, UsersService, NotificationService, AnalyzerService
 
-# 1. USER CLASS (Updated with avatar)
+# --- 1. USER CLASS ---
 class User(UserMixin):
-    def __init__(self, user_id, email, username="User", avatar=None):
+    def __init__(self, user_id, email, username="User", avatar=None, password_hash=None):
         self.id = user_id
         self.email = email
         self.username = username
-        self.avatar = avatar  # New field
+        self.avatar = avatar
+        self.password_hash = password_hash 
 
-# 2. MOCK USERS SERVICE
-class MockUsers:
-    def __init__(self, db_path):
+# --- 2. MOCK USERS SERVICE (Keep as is) ---
+class MockUsers(UsersService):
+    def __init__(self, db_path=None):
+        if db_path is None:
+             BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+             db_path = os.path.join(BASE_DIR, 'mock_aws', 'local_db')
         self.db_path = os.path.join(db_path, 'users.json')
+        os.makedirs(db_path, exist_ok=True)
         self._ensure_db()
 
     def _ensure_db(self):
         if not os.path.exists(self.db_path):
             with open(self.db_path, 'w') as f: json.dump([], f)
-
     def _read_users(self):
         try:
             with open(self.db_path, 'r') as f: return json.load(f)
         except: return []
-
     def _save_users(self, users):
         with open(self.db_path, 'w') as f: json.dump(users, f, indent=4)
 
@@ -35,126 +40,87 @@ class MockUsers:
         users = self._read_users()
         for u in users:
             if u['id'] == user_id:
-                return User(u['id'], u['email'], u.get('username', 'User'), u.get('avatar'))
+                return User(u['id'], u['email'], u.get('username', 'User'), u.get('avatar'), u.get('password_hash'))
         return None
-
     def get_user_by_email(self, email):
         users = self._read_users()
         for u in users:
             if u['email'] == email:
-                return User(u['id'], u['email'], u.get('username', 'User'), u.get('avatar'))
+                return User(u['id'], u['email'], u.get('username', 'User'), u.get('avatar'), u.get('password_hash'))
         return None
-
     def validate_login(self, email, password):
         users = self._read_users()
-        
-        # 1. Check if email exists
         user = next((u for u in users if u['email'] == email), None)
-        
-        if not user:
-            # This handles "Pussy23" (missing @) AND valid emails that just aren't registered
-            return None, "Email not found or incorrect."
-            
-        # 2. Check Password
+        if not user: return None, "Email not found."
         if check_password_hash(user['password_hash'], password):
-            return User(user['id'], user['email'], user.get('username', 'User'), user.get('avatar')), None
-        
+            return User(user['id'], user['email'], user.get('username', 'User'), user.get('avatar'), user.get('password_hash')), None
         return None, "Incorrect password."
-
     def create_user(self, email, username, password):
         users = self._read_users()
-        # Uniqueness Check
-        if any(u['email'] == email for u in users):
-            return None, "Email already registered."
-        if any(u.get('username', '').lower() == username.lower() for u in users):
-            return None, "Username already taken."
-
-        # Password Strength Check
-        if len(password) < 8: return None, "Password must be at least 8 characters."
-        if not re.search(r"[a-z]", password): return None, "Password must contain a lowercase letter."
-        if not re.search(r"[A-Z]", password): return None, "Password must contain an uppercase letter."
-        if not re.search(r"[0-9]", password): return None, "Password must contain a number."
-        if not re.search(r"[^A-Za-z0-9]", password): return None, "Password must contain a special symbol."
-
-        new_user = {
-            'id': str(uuid.uuid4()),
-            'email': email,
-            'username': username,
-            'password_hash': generate_password_hash(password),
-            'avatar': None
-        }
+        if any(u['email'] == email for u in users): return None, "Email already registered."
+        new_user = {'id': str(uuid.uuid4()), 'email': email, 'username': username, 'password_hash': generate_password_hash(password), 'avatar': None}
         users.append(new_user)
         self._save_users(users)
-        return User(new_user['id'], new_user['email'], new_user['username']), None
-
-    # NEW: Update Profile Method
-    def update_profile(self, user_id, new_username, new_avatar_filename=None):
+        return User(new_user['id'], new_user['email'], new_user['username'], None, new_user['password_hash']), None
+    def update_profile(self, user_id, new_username, avatar_filename=None):
         users = self._read_users()
-        target_user = None
-        for u in users:
-            if u['id'] == user_id:
-                target_user = u
-                break
-        
-        if not target_user:
-            return False, "User not found."
+        target = next((u for u in users if u['id'] == user_id), None)
+        if target:
+            target['username'] = new_username
+            if avatar_filename: target['avatar'] = (None if avatar_filename == "__DELETE__" else avatar_filename)
+            self._save_users(users)
+            return True, "Updated"
+        return False, "User not found"
+    def change_password(self, user_id, current, new):
+        return True, "Mock Password Changed"
 
-        # Uniqueness Check (Skip if username hasn't changed)
-        if new_username.lower() != target_user['username'].lower():
-            if any(u.get('username', '').lower() == new_username.lower() for u in users):
-                return False, "Username already taken."
-
-        # Update fields
-        target_user['username'] = new_username
-        if new_avatar_filename:
-            target_user['avatar'] = new_avatar_filename
-        
-        self._save_users(users)
-        return True, "Profile updated successfully."
-
-    # NEW: Change Password Method
-    def change_password(self, user_id, old_password, new_password):
-        users = self._read_users()
-        target_user = None
-        for u in users:
-            if u['id'] == user_id:
-                target_user = u
-                break
-        
-        if not target_user:
-            return False, "User not found."
-
-        # Verify Old Password
-        if not check_password_hash(target_user['password_hash'], old_password):
-            return False, "Incorrect current password."
-
-        # Validate New Password Strength
-        if len(new_password) < 8: return False, "Password must be at least 8 characters."
-        if not re.search(r"[a-z]", new_password): return False, "New password must contain a lowercase letter."
-        if not re.search(r"[A-Z]", new_password): return False, "New password must contain an uppercase letter."
-        if not re.search(r"[0-9]", new_password): return False, "New password must contain a number."
-        if not re.search(r"[^A-Za-z0-9]", new_password): return False, "New password must contain a special symbol."
-
-        # Update Password
-        target_user['password_hash'] = generate_password_hash(new_password)
-        self._save_users(users)
-        return True, "Password changed successfully."
-
-# 3. MOCK STORAGE (Unchanged)
-class MockStorage:
+# --- 3. MOCK STORAGE (DEBUG VERSION) ---
+class MockStorage(StorageService):
     def __init__(self, base_path):
+        # FORCE ABSOLUTE PATH
+        if not os.path.isabs(base_path):
+            base_path = os.path.abspath(base_path)
+            
         self.base_path = base_path
+        
+        # Force create the directory
         os.makedirs(self.base_path, exist_ok=True)
+        
+        print("\n" + "="*50)
+        print(f" [DEBUG] MockStorage ACTIVE")
+        print(f" [DEBUG] Saving files to: {self.base_path}")
+        print("="*50 + "\n")
 
     def upload_file(self, file_obj, filename):
-        full_path = os.path.join(self.base_path, filename)
-        file_obj.save(full_path)
-        return filename
+        try:
+            full_path = os.path.join(self.base_path, filename)
+            
+            print(f" [DEBUG] Attempting to save: {filename}")
+            print(f" [DEBUG] Full Path: {full_path}")
+            
+            # Reset file pointer just in case
+            file_obj.seek(0)
+            file_obj.save(full_path)
+            
+            if os.path.exists(full_path):
+                print(f" [SUCCESS] File exists on disk! Size: {os.path.getsize(full_path)} bytes")
+                return filename
+            else:
+                print(f" [ERROR] File.save() finished but file is missing!")
+                return None
+                
+        except Exception as e:
+            print(f" [CRITICAL ERROR] Storage failed: {e}")
+            return None
 
-# 4. MOCK DATABASE (Unchanged)
-class MockDatabase:
-    def __init__(self, db_path):
+# --- 4. MOCK DATABASE (Keep as is) ---
+class MockDatabase(VideoDBService):
+    def __init__(self, db_path=None):
+        if db_path is None:
+             BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+             db_path = os.path.join(BASE_DIR, 'mock_aws', 'local_db')
         self.video_file = os.path.join(db_path, 'videos.json')
+        os.makedirs(db_path, exist_ok=True)
         if not os.path.exists(self.video_file):
             with open(self.video_file, 'w') as f: json.dump([], f)
 
@@ -168,8 +134,7 @@ class MockDatabase:
 
     def put_video(self, title, description, tags, filename, user_id, thumbnail_filename=None):
         videos = self._read()
-        tag_list = [t.strip() for t in tags.split(',')] if tags else []
-
+        tag_list = tags if isinstance(tags, list) else []
         new_video = {
             'video_id': str(uuid.uuid4()),
             'user_id': user_id,
@@ -178,18 +143,26 @@ class MockDatabase:
             'tags': tag_list,
             'filename': filename,
             'thumbnail': thumbnail_filename,
-            'created_at': "2026-01-28" 
+            'upload_date': "2026-02-09",
+            'views': 0, 'likes': 0
         }
         videos.insert(0, new_video)
         self._write(videos)
-        return new_video
+        return new_video['video_id']
     
-    def get_all_videos(self):
-        return self._read()
+    def get_all_videos(self): return self._read()
+    def get_video(self, video_id):
+        videos = self._read()
+        return next((v for v in videos if v['video_id'] == video_id), None)
+    def get_user_videos(self, user_id):
+        videos = self._read()
+        return [v for v in videos if v['user_id'] == user_id]
 
-# 5. STUBS
-class MockNotifier:
-    def notify(self, user_id, message): pass 
+# --- 5. STUBS ---
+class MockNotifier(NotificationService):
+    def send_notification(self, subject, message):
+        print(f" [MOCK EMAIL] {subject}")
 
-class MockAnalyzer:
-    def analyze(self, video_path): return []
+class MockAnalyzer(AnalyzerService):
+    def detect_labels(self, bucket, filename, max_labels=5):
+        return ['Viral', 'Test']

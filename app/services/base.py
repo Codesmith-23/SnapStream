@@ -87,3 +87,23 @@ class UsersService(ABC):
         Returns (SuccessBool, MessageString).
         """
         pass
+
+# --- 4. Notification Service (SNS) ---
+
+class NotificationService(ABC):
+    @abstractmethod
+    def send_notification(self, subject, message):
+        """
+        Sends a notification (Email/SMS) to the admin or user.
+        """
+        pass
+
+# --- 5. Analysis (Rekognition) ---
+
+class AnalyzerService(ABC):
+    @abstractmethod
+    def detect_labels(self, bucket, filename, max_labels=5):
+        """
+        Scans an image and returns a list of tags.
+        """
+        pass

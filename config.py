@@ -3,39 +3,47 @@ from datetime import timedelta
 
 class Config:
     # ========================================================
-    # 1. SMART SECRET KEY (Handles Both Local & AWS)
+    # 1. SECURITY SETTINGS
     # ========================================================
-    # AWS: We will set 'SECRET_KEY' in the AWS Console settings.
-    # Local: Since that variable is missing, it falls back to os.urandom(24).
-    # This gives you the "restart = logout" behavior locally, but stability on AWS.
-    SECRET_KEY = os.environ.get('SECRET_KEY') or os.urandom(24)
+    # If there is no SECRET_KEY in the environment (Local), use 'dev-key'.
+    # This prevents the "No Secret Key" error and keeps you logged in after restarts.
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-for-snapstream-local-12345'
 
-    # ========================================================
-    # 2. SESSION SETTINGS
-    # ========================================================
-    PERMANENT_SESSION_LIFETIME = timedelta(days=7) # Users stay logged in for 7 days
-    SESSION_COOKIE_SECURE = False # Set to True later when you have HTTPS on AWS
+    # Session Settings
+    PERMANENT_SESSION_LIFETIME = timedelta(days=7) 
+    SESSION_COOKIE_SECURE = False # False for Local/HTTP
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
 
     # ========================================================
-    # 3. STORAGE & DATABASE PATHS
+    # 2. STORAGE & DATABASE PATHS
     # ========================================================
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
     
-    # These paths are only used if you are using the Mock/Local implementation
+    # Mock Paths
     MOCK_MEDIA_FOLDER = os.path.join(BASE_DIR, 'mock_aws', 'local_s3')
     MOCK_DB_FOLDER = os.path.join(BASE_DIR, 'mock_aws', 'local_db')
     
-    # AWS Configuration (Will be read from Environment Variables on Server)
-    AWS_BUCKET_NAME = os.environ.get('AWS_BUCKET_NAME')
+    # AWS Configuration
     AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
+    AWS_BUCKET_NAME = os.environ.get('AWS_BUCKET_NAME')
+    
+    # DynamoDB Tables
     DYNAMO_TABLE_VIDEO = os.environ.get('DYNAMO_TABLE_VIDEO')
     DYNAMO_TABLE_USER = os.environ.get('DYNAMO_TABLE_USER')
 
-    # Upload Limits
-    MAX_CONTENT_LENGTH = 2 * 1024 * 1024 * 1024 # 2GB Limit
+    # Notification Config (SNS)
+    SNS_TOPIC_ARN = os.environ.get('SNS_TOPIC_ARN')
+
+    # ========================================================
+    # 3. AI CONFIGURATION
+    # ========================================================
+    REKOGNITION_MIN_CONFIDENCE = 75 
+
+    # ========================================================
+    # 4. UPLOAD LIMITS
+    # ========================================================
+    MAX_CONTENT_LENGTH = 2 * 1024 * 1024 * 1024 # 2GB
     
-    # Debug Mode: True locally, False on AWS (controlled by env var)
     DEBUG = os.environ.get('FLASK_DEBUG', 'True') == 'True'
     ENV = 'development'

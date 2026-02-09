@@ -9,7 +9,7 @@
             <p>Manage your videos and uploads</p>
         </div>
         <div class="header-right">
-            <a href="{{ url_for('web.upload_page') }}" class="btn-create">
+            <a href="{{ url_for('stream.upload') }}" class="btn-create">
                 <i class="fa-solid fa-plus"></i> Create
             </a>
         </div>
@@ -21,7 +21,7 @@
             <div class="video-row">
                 
                 <div class="row-thumbnail">
-                    <a href="{{ url_for('web.watch', video_id=video.video_id) }}">
+                    <a href="{{ url_for('stream.watch', video_id=video.video_id) }}">
                         {% if video.thumbnail %}
                             <img src="{{ url_for('stream.stream_file', filename=video.thumbnail) }}" alt="Thumbnail">
                         {% else %}
@@ -31,7 +31,7 @@
                 </div>
 
                 <div class="row-details">
-                    <a href="{{ url_for('web.watch', video_id=video.video_id) }}" class="row-title">
+                    <a href="{{ url_for('stream.watch', video_id=video.video_id) }}" class="row-title">
                         {{ video.title }}
                     </a>
                     <p class="row-desc">
@@ -53,7 +53,7 @@
                 </div>
 
                 <div class="row-actions">
-                    <a href="{{ url_for('web.watch', video_id=video.video_id) }}" class="action-btn view-btn" title="Watch Video">
+                    <a href="{{ url_for('stream.watch', video_id=video.video_id) }}" class="action-btn view-btn" title="Watch Video">
                         <i class="fa-solid fa-eye"></i>
                     </a>
                     <button class="action-btn edit-btn" title="Edit Details (Coming Soon)">
@@ -74,7 +74,7 @@
                 </div>
                 <h3>No content yet</h3>
                 <p>Upload a video to get started with your studio.</p>
-                <a href="{{ url_for('web.upload_page') }}" class="btn-create">Upload Video</a>
+                <a href="{{ url_for('stream.upload') }}" class="btn-create">Upload Video</a>
             </div>
         {% endif %}
     </div>

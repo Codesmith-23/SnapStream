@@ -7,7 +7,7 @@
         <p>Create, customize, and share your content</p>
     </div>
 
-    <form action="{{ url_for('web.upload_page') }}" method="POST" enctype="multipart/form-data" id="uploadForm" class="upload-form" onsubmit="return prepareSubmission()">
+    <form action="{{ url_for('stream.upload') }}" method="POST" enctype="multipart/form-data" id="uploadForm" class="upload-form" onsubmit="return prepareSubmission()">
         
         <div class="upload-grid">
 

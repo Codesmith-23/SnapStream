@@ -19,7 +19,7 @@
 
     <div class="video-grid">
         {% for video in videos %}
-        <a href="{{ url_for('web.watch', video_id=video.video_id) }}" class="video-card">
+        <a href="{{ url_for('stream.watch', video_id=video.video_id) }}" class="video-card">
             <div class="thumbnail-wrapper">
                 {% if video.thumbnail %}
                 <img src="{{ url_for('stream.stream_file', filename=video.thumbnail) }}" alt="{{ video.title }}"
@@ -36,7 +36,7 @@
                     <p class="channel-name" style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 2px;">
                         SnapStream User</p>
                     <div class="video-stats" style="color: var(--text-gray); font-size: 0.8rem;">
-                        <span>Uploaded {{ video.created_at[:10] }}</span>
+                        <span>Uploaded {{ video.upload_date }}</span>
                     </div>
                 </div>
             </div>

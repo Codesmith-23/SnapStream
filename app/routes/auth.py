@@ -1,12 +1,8 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, login_required
 
-# --- THE FIX IS HERE ---
-# 1. Import the service that automatically switches between Mock and AWS
+# Import the service that automatically switches between Mock and AWS
 from app.config_services import users_service
-
-# 2. DELETE the lines that initialized MockUsers manually.
-#    (We do not need os, BASE_DIR, or MOCK_DIR here anymore)
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -27,31 +23,40 @@ def signup():
 
         if user:
             login_user(user)
+            # --- FIX 1: Enforce the 7-Day Session from Config ---
+            session.permanent = True 
             flash('Account created successfully!', 'success')
-            return redirect(url_for('web.gallery'))
+            return redirect(url_for('web.gallery')) # Redirect to gallery instead of home
         else:
             flash(error, 'error')
 
-    return render_template('auth/signup.html')
+    # --- FIX 2: Standardized Template Path (Removed 'auth/' prefix) ---
+    return render_template('signup.html')
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
+        
+        # We can still use the checkbox, but we force permanent session below
         remember = True if request.form.get('remember') else False
 
-        # Validate returns a tuple: (user_object, error_message)
         user, error = users_service.validate_login(email, password)
 
         if user:
             login_user(user, remember=remember)
+            
+            # --- FIX 1: Enforce the 7-Day Session from Config ---
+            # Without this line, PERMANENT_SESSION_LIFETIME in config.py is IGNORED.
+            session.permanent = True 
+            
             return redirect(url_for('web.gallery'))
         else:
-            # This handles "Invalid format", "Not found", and "Wrong password"
             flash(error, 'error') 
             
-    return render_template('auth/login.html')
+    # --- FIX 2: Standardized Template Path ---
+    return render_template('login.html')
 
 @auth_bp.route('/logout')
 @login_required
