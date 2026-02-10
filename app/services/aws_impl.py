@@ -9,27 +9,27 @@ from app.models import User
 from config import Config  # <--- NEW IMPORT
 
 # --- 1. S3 STORAGE ---
-class S3Storage(StorageService):
+class S3Storage:
     def __init__(self):
-        self.bucket = os.environ.get('AWS_BUCKET_NAME')
-        self.region = os.environ.get('AWS_REGION', 'us-east-1')
-        self.s3_client = boto3.client('s3', region_name=self.region)
-        print(f"[INFO] S3Storage initialized: bucket={self.bucket}")
-    
-    def upload_file(self, file_obj, filename):
-        try:
-            content_type = file_obj.content_type or 'application/octet-stream'
-            self.s3_client.upload_fileobj(
-                file_obj,
-                self.bucket,
-                filename,
-                ExtraArgs={'ContentType': content_type}
-            )
-            return filename
-        except ClientError as e:
-            print(f"[ERROR] S3 upload failed: {e}")
-            return None
+        # We save files to the 'static/uploads' folder on the server
+        self.upload_folder = os.path.join(os.getcwd(), 'app', 'static', 'uploads')
+        if not os.path.exists(self.upload_folder):
+            os.makedirs(self.upload_folder)
 
+    def upload_file(self, file_obj, filename):
+        """Saves file to local disk instead of S3"""
+        filename = secure_filename(filename)
+        file_path = os.path.join(self.upload_folder, filename)
+        
+        # Save the file
+        file_obj.save(file_path)
+        return filename
+
+    def generate_presigned_url(self, object_name, expiration=3600):
+        """Returns the local web path for the image"""
+        # Returns: /static/uploads/filename.jpg
+        return f"/static/uploads/{object_name}"
+    
 # --- 2. DYNAMO VIDEO DB ---
 class DynamoDBService(VideoDBService):
     def __init__(self):
