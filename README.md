@@ -1,7 +1,7 @@
 # 📸 SnapStream - Secure Cloud Video Gallery
 
 <img width="1919" height="928" alt="image" src="https://github.com/user-attachments/assets/6cee9401-2e03-436c-97da-6e71baa2ea2d" />
-(https://via.placeholder.com/1000x300?text=SnapStream+Secure+Cloud+Gallery)
+
 **SnapStream** is a secure, cloud-native video sharing platform built with Python and Flask. It allows users to upload, manage, and explore video content in a secure environment. The application is deployed on AWS EC2, utilizing Nginx as a reverse proxy and Gunicorn as the application server, ensuring high performance and scalability.
 
 ---
