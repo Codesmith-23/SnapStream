@@ -148,5 +148,5 @@ This project is deployed on an **AWS EC2 (Amazon Linux 2023)** instance.
 
 ### 👤 Author
 **Mohammed Moinuddin Shaikh**
-* Connect on [LinkedIn]([https://linkedin.com/in/your-profile](https://www.linkedin.com/in/mohammed-moinuddin-shaikh-699ab7259?utm_source=share_via&utm_content=profile&utm_medium=member_android))
+* Connect on [LinkedIn](https://www.linkedin.com/in/mohammed-moinuddin-shaikh-699ab7259?utm_source=share_via&utm_content=profile&utm_medium=member_android)
 * GitHub: [Codesmith-23](https://github.com/Codesmith-23)
